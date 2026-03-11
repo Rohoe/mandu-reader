@@ -252,7 +252,10 @@ export function getWordsByPeriod(vocab, period = 'week') {
       // Weekly buckets (last 8 weeks)
       const weekStart = new Date(now);
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      const diffWeeks = Math.floor((weekStart - d) / (7 * 24 * 60 * 60 * 1000));
+      weekStart.setHours(0, 0, 0, 0);
+      const dDay = new Date(d);
+      dDay.setHours(0, 0, 0, 0);
+      const diffWeeks = Math.floor((weekStart - dDay) / (7 * 24 * 60 * 60 * 1000));
       if (diffWeeks < 0 || diffWeeks >= bucketCount) continue;
       bucketKey = diffWeeks;
     } else {
