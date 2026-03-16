@@ -7,9 +7,9 @@ A single-page web app for generating graded readers in **Mandarin Chinese**, **C
 - **Multi-provider AI** — Choose from Anthropic Claude, OpenAI GPT-4o, Google Gemini, or any OpenAI-compatible endpoint (DeepSeek, Groq, custom). Each provider stores its own API key; switch freely without losing keys. Model picker with curated defaults per provider; collapsed by default, expandable to type any model ID (handles new/deprecated models gracefully)
 - **Multi-language support** — Generate readers in Mandarin Chinese (HSK 1–6), Cantonese (YUE 1–6, written Cantonese with jyutping), Korean (TOPIK 1–6), French (CEFR A0–C2), Spanish (CEFR A0–C2), or English (CEFR A0–C2). Select a language via the pill toggle in the sidebar form; content in all languages coexists side-by-side
 - **Native language selection** — Choose your explanation language (English, Chinese, Korean, French, Spanish, Japanese) so vocabulary definitions, translations, and grammar notes appear in your native language instead of always in English
-- **Syllabus Mode** — Generate a course for any topic with proficiency-level selection, an AI-written summary and a dedicated home page showing all lessons and completion status
-- **Graded Reader Generation** — Stories with bolded vocabulary, level-calibrated grammar
-- **Vocabulary Memory** — Tracks learned words across sessions; new readers avoid repeating them
+- **Syllabus Mode** — Generate a course for any topic with proficiency-level selection, an AI-written summary and a dedicated home page showing all lessons, completion status, and a collapsible "What you've learned" summary aggregating vocabulary, grammar patterns, and total reading across completed lessons
+- **Graded Reader Generation** — Stories with bolded vocabulary, level-calibrated grammar. Syllabus lessons use vocabulary focus keywords, cumulative lesson context, progressive difficulty hints (review/core/stretch), and grammar tracking to create a coherent learning progression rather than isolated readings
+- **Vocabulary Memory** — Tracks learned words across sessions; new readers avoid repeating them as new vocabulary but actively reinforce 3–5 previously learned words per story
 - **Anki Export** — Download flashcard files (.txt) with duplicate prevention; includes both vocabulary cards and grammar pattern cards (tagged `Grammar`)
 - **Offline persistence** — All data stored in `localStorage`; pick up where you left off. Automatic LRU eviction frees space when >30 readers are cached (only evicts readers backed up to cloud or file storage); evicted readers show a one-click "Restore from backup" button
 - **Grammar Notes** — Each reader includes 3–5 collapsible grammar pattern cards explaining structures used in the story, with examples
@@ -17,7 +17,7 @@ A single-page web app for generating graded readers in **Mandarin Chinese**, **C
 - **Syllabus home page** — Overview of all lessons with completion badges, a summary, Continue CTA, and delete button with confirmation
 - **Configurable length** — Sliders for syllabus lesson count (2–12) and reader story length (150–2000 characters). Short readers (≤250 chars) automatically scale down to fewer vocabulary words, questions, and grammar notes — ideal for absolute beginners
 - **Dark mode** — Toggle in Settings; persists across sessions. Overrides all colour tokens via `[data-theme="dark"]` on the root element
-- **Story continuation** — "Next episode →" button generates a follow-up reader that continues the narrative from the previous story, maintaining characters and setting. Continuation chains are grouped as series in the sidebar with episode numbers
+- **Story continuation** — "Next episode →" button generates a follow-up reader that continues the narrative from the previous story, maintaining characters and setting. Smart truncation preserves both the opening and ending of long stories for better narrative coherence. Continuation chains are grouped as series in the sidebar with episode numbers
 - **Flashcard review** — Built-in SRS flashcard system with daily sessions. Forward cards (target→EN) and reverse cards (EN→target) with independent spaced repetition tracking. Reverse cards unlock after a word is reviewed forward at least once. Missed/almost cards are re-queued until all are "Got it". Configurable new cards per day (default 20). SRS interval previews below judgment buttons show upcoming intervals. Romanization ruby annotations on card front when enabled. Undo (Ctrl+Z) restores the previous card. Example sentences shown on card backs. Sessions persisted per-language; resume on the same day, reset at midnight. "New session" resets the new-card budget and shows only never-reviewed cards (skips due cards entirely). Filter by language. Accessible from the sidebar footer or Stats dashboard
 - **Demo mode** — New users see a sample HSK 2 reader on first launch. A default free Gemini API key enables basic generation without setup; add your own key for faster responses and higher limits
 - **Extend syllabus** — "Add more lessons" panel on the syllabus home page appends 2–6 AI-generated lessons to an existing syllabus
@@ -151,7 +151,7 @@ npm run test:e2e      # run E2E tests (Playwright)
 npm run test:e2e:ui   # Playwright UI mode
 ```
 
-- **241 unit tests** (Vitest) — parser, reducer, stats, anki, storage, cloudSync, useReaderGeneration, difficultyValidator, and more
+- **497 unit tests** (Vitest) — parser, reducer, stats, anki, storage, cloudSync, useReaderGeneration, difficultyValidator, and more
 - **22 E2E tests** (Playwright) — demo reader, settings, reader generation, flashcards, mobile layout
 
 ## Tech stack

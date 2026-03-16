@@ -21,7 +21,7 @@
 | `vocabNormalizer.js` | Migration helpers: `normalizeSyllabus()` adds langId + title_target. `normalizeVocabWord()` maps chinese/pinyin/english ↔ target/romanization/translation. |
 | `providers.js` | Provider registry. Exports `PROVIDERS`, `getProvider(id)`, `DEFAULT_PROVIDER`. Four providers: anthropic, openai, gemini, openai_compatible (presets: DeepSeek, Groq, custom). |
 | `llmConfig.js` | `buildLLMConfig(state)` → `{ provider, apiKey, model, baseUrl }` |
-| `api.js` | LLM API calls: `generateSyllabus()`, `generateReader()`, `generateReaderStream()`, `extendSyllabus()`, `gradeAnswers()`. All accept `llmConfig` first, `langId` last. `generateReaderStream()` is an async generator for Anthropic SSE streaming. `callLLM()` dispatches to provider-specific functions. `fetchWithRetry()` for backoff. `callLLMStructured()` for structured output. Exports `isRetryable` for testing. |
+| `api.js` | LLM API calls: `generateSyllabus()`, `generateReader()`, `generateReaderStream()`, `extendSyllabus()`, `gradeAnswers()`. All accept `llmConfig` first, `langId` last. `generateReaderStream()` is an async generator for Anthropic SSE streaming. `callLLM()` dispatches to provider-specific functions. `fetchWithRetry()` for backoff. `callLLMStructured()` for structured output. `buildReaderUserMessage()` accepts syllabus-aware options: `vocabFocus`, `syllabusContext`, `taughtGrammar`. Story continuation uses smart truncation (preserves beginning + end). Exports `isRetryable` for testing. |
 | `difficultyValidator.js` | `assessDifficulty(vocab, learnedVocabulary, level)` computes new-word ratio and returns an assessment label/class. Used by ReaderHeader to show a difficulty badge. |
 | `stats.js` | `computeStats(state)`, `getStreak()`, `getWordsByPeriod()` |
 | `storage.js` | localStorage helpers with file fan-out via `setDirectoryHandle()`. Per-reader lazy storage. LRU eviction (>30 cached, >30 days). Provider keys NOT synced to file/cloud. |
@@ -36,8 +36,8 @@
 
 | File | Function |
 |------|----------|
-| `syllabusPrompt.js` | `buildSyllabusPrompt(langConfig, topic, level, lessonCount)` |
-| `readerSystemPrompt.js` | `buildReaderSystem(langConfig, level, topic, charRange, targetChars)` |
+| `syllabusPrompt.js` | `buildSyllabusPrompt(langConfig, topic, level, lessonCount)` — lesson schema includes `vocabulary_focus` and `difficulty_hint` |
+| `readerSystemPrompt.js` | `buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint })` — adds reinforcement and difficulty guidance |
 | `gradingPrompt.js` | `buildGradingSystem(langConfig, level)` |
 | `extendSyllabusPrompt.js` | `buildExtendSyllabusPrompt(langConfig, topic, level, existingLessons, additionalCount)` |
 
@@ -48,7 +48,7 @@
 | `useTTS.js` | Voice loading, speech synthesis, per-paragraph speak. Rate = `ttsSpeechRate × langConfig.tts.defaultRate`. |
 | `useRomanization.jsx` | Async romanizer loading, `renderChars()` with ruby tags. Parses markdown segments before applying romanization. |
 | `useVocabPopover.js` | Vocab map, click handler, popover positioning, close logic |
-| `useReaderGeneration.js` | Generate/regenerate API calls + state updates. AbortController for abort-on-unmount. Returns `streamingText` for Anthropic streaming preview. |
+| `useReaderGeneration.js` | Generate/regenerate API calls + state updates. AbortController for abort-on-unmount. Returns `streamingText` for Anthropic streaming preview. When inside a syllabus, builds cumulative context (vocab focus, prior lessons, taught grammar, difficulty hint) from `syllabus` and `generatedReaders` props. |
 | `useFocusTrap.js` | Focus trap for popovers. Keeps keyboard focus within the active popover until dismissed. |
 | `useReadingTimer.js` | Tracks reading time per reader. Starts on mount, pauses on blur/idle, resumes on focus. Stores `readingTime` (seconds) in reader state. |
 | `usePWA.js` | PWA install prompt hook. Captures `beforeinstallprompt` event, exposes `canInstall` flag and `promptInstall()` method. |

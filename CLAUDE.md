@@ -8,7 +8,7 @@ Single-page React + Vite app that generates graded readers in **Mandarin Chinese
 npm install        # first time only
 npm run dev        # http://localhost:5173
 npm run build      # production build
-npm test           # unit tests (Vitest, 496 tests)
+npm test           # unit tests (Vitest, 497 tests)
 npm run test:e2e   # E2E tests (Playwright, 22 tests)
 ```
 
@@ -37,6 +37,7 @@ e2e/                   Playwright E2E specs + fixtures
 - **State:** useReducer in AppContext.jsx. Reducer split into 8 domain slices in `src/context/reducers/`. Persistence extracted to `usePersistence.js`. Test-only exports: `_baseReducer`, `_reducer`, `_DATA_ACTIONS`.
 - **Storage:** localStorage (primary) + opt-in File System Access API (Chrome) + Supabase cloud sync with auto-merge and undo.
 - **Parsing:** Regex parser (default) in `parser.js`, structured JSON parser (opt-in) via `normalizeStructuredReader()`.
+- **Syllabus→Reader connection:** Syllabus lesson metadata (`vocabulary_focus`, `difficulty_hint`) is threaded into reader prompts. `useReaderGeneration` builds cumulative context (prior lesson summaries, taught grammar patterns) so each lesson builds on previous ones. `SyllabusHome` aggregates a learning summary from completed readers.
 - **Streaming:** Anthropic provider supports streaming responses via `generateReaderStream()` async generator. Text streams progressively to UI, then parses on completion.
 
 ## Lesson keys

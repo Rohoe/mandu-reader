@@ -20,10 +20,11 @@
 
 ## Prompt types
 
-- **Syllabus:** Returns JSON `{ summary, lessons[] }` (no markdown fences). Falls back if LLM returns plain array.
+- **Syllabus:** Returns JSON `{ summary, lessons[] }` (no markdown fences). Each lesson includes `vocabulary_focus` (3–5 theme keywords) and `difficulty_hint` (`"review"`, `"core"`, or `"stretch"`). Falls back if LLM returns plain array.
 - **Reader (text mode):** Structured markdown with sections 1–6; section 5 is ` ```anki-json``` `
 - **Reader (structured mode):** JSON matching `READER_JSON_SCHEMA`: `title_target`, `title_en`, `story`, `vocabulary[]`, `questions[]`, `grammar_notes[]`
-- `learnedVocabulary` keys passed to LLM to avoid re-introducing covered words
+- `learnedVocabulary` keys passed to LLM — not repeated as new vocab, but 3–5 are actively reinforced in the story
+- **Syllabus-aware generation:** When generating within a syllabus, the reader prompt includes: `vocabFocus` (lesson's vocabulary themes), `syllabusContext` (prior lesson summaries and position), `taughtGrammar` (grammar patterns from completed lessons to avoid repetition), and `difficultyHint` (adjusts grammar complexity). Built by `useReaderGeneration` from syllabus + reader state.
 
 ## Response parsing (lib/parser.js)
 
