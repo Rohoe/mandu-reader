@@ -378,34 +378,57 @@ async function* callAnthropicStream(apiKey, model, systemPrompt, userMessage, ma
 const MAX_VOCAB_LIST = 200;
 
 /**
- * Builds the user message for reader generation, including learned vocabulary
- * and optional continuation context. Shared between generateReader and
- * generateReaderStream to eliminate duplication.
+ * Builds the user message for reader generation, including learned vocabulary,
+ * optional continuation context, syllabus context, vocabulary focus, and
+ * grammar tracking.
  */
-function buildReaderUserMessage(topic, learnedWords, previousStory, langId) {
+function buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar } = {}) {
   const learnedList = Object.keys(learnedWords)
     .filter(w => !learnedWords[w].langId || learnedWords[w].langId === langId)
     .sort((a, b) => (learnedWords[b].dateAdded || 0) - (learnedWords[a].dateAdded || 0))
     .slice(0, MAX_VOCAB_LIST);
   const learnedSection = learnedList.length > 0
-    ? `\n\nPreviously introduced vocabulary (do not reuse as "new" vocabulary — you may use these words freely in the story but do not list them in the vocabulary section):\n${learnedList.join(', ')}`
+    ? `\n\nPreviously learned vocabulary (do NOT list as new vocabulary, but naturally incorporate 3-5 of these words into the story for reinforcement):\n${learnedList.join(', ')}`
     : '';
 
-  const truncatedStory = previousStory && previousStory.length > 600
-    ? '[Earlier story truncated]\n…' + previousStory.slice(-600)
-    : previousStory;
-  const continuationSection = truncatedStory
-    ? `\n\nThis is a continuation. Previous episode for narrative context:\n---\n${truncatedStory}\n---\nContinue the story with new events, maintaining the same characters and setting.`
+  // Vocabulary focus from syllabus lesson metadata
+  const vocabFocusSection = vocabFocus?.length > 0
+    ? `\n\nVocabulary focus for this lesson: ${vocabFocus.join(', ')}. Prioritize selecting new vocabulary related to these themes.`
     : '';
 
-  return `Generate a graded reader for the topic: ${topic}${learnedSection}${continuationSection}`;
+  // Cumulative lesson context from syllabus
+  const syllabusSection = syllabusContext
+    ? `\n\n${syllabusContext}`
+    : '';
+
+  // Grammar patterns already taught in prior lessons
+  const grammarSection = taughtGrammar?.length > 0
+    ? `\n\nGrammar patterns already taught (do not repeat as grammar notes; you may use them in the story):\n${taughtGrammar.join(', ')}`
+    : '';
+
+  // Smart story truncation preserving beginning and end
+  let storyExcerpt;
+  if (previousStory) {
+    if (previousStory.length <= 1000) {
+      storyExcerpt = previousStory;
+    } else if (previousStory.length <= 2000) {
+      storyExcerpt = previousStory.slice(0, 300) + '\n\n[...]\n\n' + previousStory.slice(-600);
+    } else {
+      storyExcerpt = previousStory.slice(0, 300) + '\n\n[...middle omitted...]\n\n' + previousStory.slice(-600);
+    }
+  }
+  const continuationSection = storyExcerpt
+    ? `\n\nThis is a continuation. Previous episode for narrative context:\n---\n${storyExcerpt}\n---\nContinue the story with new events, maintaining the same characters and setting.`
+    : '';
+
+  return `Generate a graded reader for the topic: ${topic}${syllabusSection}${vocabFocusSection}${learnedSection}${grammarSection}${continuationSection}`;
 }
 
 /**
  * Streaming variant of generateReader. Returns an async generator of text chunks.
  * Only supports Anthropic provider.
  */
-export async function* generateReaderStream(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal: externalSignal, nativeLang = 'en' } = {}) {
+export async function* generateReaderStream(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal: externalSignal, nativeLang = 'en', vocabFocus, syllabusContext, taughtGrammar, difficultyHint } = {}) {
   const { apiKey, model } = llmConfig;
   if (!apiKey) throw new Error('No API key provided. Please add your API key in Settings.');
 
@@ -413,8 +436,8 @@ export async function* generateReaderStream(llmConfig, topic, level, learnedWord
   const nativeLangName = getNativeLang(nativeLang).name;
   const rangePadding = targetChars <= 300 ? 50 : 100;
   const charRange = `${targetChars - rangePadding}-${targetChars + rangePadding}`;
-  const system = buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName);
-  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId);
+  const system = buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint });
+  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar });
 
   const { signal, cleanup } = createTimeoutController(externalSignal);
 
@@ -557,13 +580,13 @@ export const READER_JSON_SCHEMA = {
 
 // ── Reader generation ─────────────────────────────────────────
 
-export async function generateReader(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal, structured = false, nativeLang = 'en' } = {}) {
+export async function generateReader(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal, structured = false, nativeLang = 'en', vocabFocus, syllabusContext, taughtGrammar, difficultyHint } = {}) {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
   const rangePadding = targetChars <= 300 ? 50 : 100;
   const charRange = `${targetChars - rangePadding}-${targetChars + rangePadding}`;
-  const system = buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName);
-  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId);
+  const system = buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint });
+  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar });
 
   return await callLLM(llmConfig, system, userMessage, maxTokens, { signal, structured });
 }

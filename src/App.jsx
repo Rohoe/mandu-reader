@@ -330,6 +330,7 @@ function AppShell() {
               lessonMeta={standaloneKey ? null : (activeMeta
                 ? { ...activeMeta, level: currentSyllabus?.level, langId: currentSyllabus?.langId, lesson_number: lessonIndex + 1 }
                 : null)}
+              syllabus={standaloneKey ? null : currentSyllabus}
               onMarkComplete={handleMarkComplete}
               onUnmarkComplete={handleUnmarkComplete}
               isCompleted={standaloneKey

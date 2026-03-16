@@ -258,8 +258,26 @@ describe('generateReader', () => {
     expect(result).toContain('Story');
   });
 
-  it('truncates previousStory when longer than 600 chars', async () => {
-    const longStory = 'A'.repeat(800);
+  it('passes full previousStory when under 1000 chars', async () => {
+    const shortStory = 'A'.repeat(800);
+    let capturedBody;
+    vi.stubGlobal('fetch', vi.fn((url, opts) => {
+      capturedBody = JSON.parse(opts.body);
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          choices: [{ message: { content: 'reader text' } }],
+        }),
+      });
+    }));
+    await generateReader(BASE_CONFIG, 'food', 3, {}, 1200, 8192, shortStory);
+    const userMsg = capturedBody.messages.find(m => m.role === 'user').content;
+    expect(userMsg).toContain(shortStory);
+    expect(userMsg).not.toContain('[...');
+  });
+
+  it('truncates previousStory preserving start and end when over 2000 chars', async () => {
+    const longStory = 'B'.repeat(300) + 'MIDDLE'.repeat(300) + 'E'.repeat(600);
     let capturedBody;
     vi.stubGlobal('fetch', vi.fn((url, opts) => {
       capturedBody = JSON.parse(opts.body);
@@ -272,7 +290,9 @@ describe('generateReader', () => {
     }));
     await generateReader(BASE_CONFIG, 'food', 3, {}, 1200, 8192, longStory);
     const userMsg = capturedBody.messages.find(m => m.role === 'user').content;
-    expect(userMsg).toContain('[Earlier story truncated]');
+    expect(userMsg).toContain('[...middle omitted...]');
+    expect(userMsg).toContain('B'.repeat(300));
+    expect(userMsg).toContain('E'.repeat(600));
   });
 
   it('filters vocabulary by langId', async () => {

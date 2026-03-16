@@ -200,6 +200,82 @@
   opacity: 1;
 }
 
+/* ── Learning summary ────────────────────── */
+.syllabus-home__summary-toggle {
+  all: unset;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.syllabus-home__summary-toggle:hover {
+  color: var(--color-accent);
+}
+
+.syllabus-home__learning-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-elevated);
+}
+
+.syllabus-home__summary-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.syllabus-home__summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.syllabus-home__summary-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.syllabus-home__vocab-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.syllabus-home__vocab-chip {
+  font-size: var(--text-sm);
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  background: var(--color-accent-light);
+  border: 1px solid var(--color-accent-dim);
+}
+
+.syllabus-home__vocab-chip--more {
+  background: transparent;
+  border-color: var(--color-border);
+}
+
+.syllabus-home__grammar-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.syllabus-home__grammar-item {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
 /* ── Continue CTA ────────────────────────── */
 .syllabus-home__cta {
   display: flex;

@@ -31,7 +31,7 @@ import ReaderEvictedState from './ReaderEvictedState';
 import ReaderPregenerate from './ReaderPregenerate';
 import './ReaderView.css';
 
-export default function ReaderView({ lessonKey, lessonMeta, onMarkComplete, onUnmarkComplete, isCompleted, onContinueStory, onOpenSidebar, onOpenSettings }) {
+export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComplete, onUnmarkComplete, isCompleted, onContinueStory, onOpenSidebar, onOpenSettings }) {
   const t = useT();
   // Track which lesson keys we've already tried to load from cache
   const loadedKeysRef = useRef(new Set());
@@ -167,6 +167,7 @@ export default function ReaderView({ lessonKey, lessonMeta, onMarkComplete, onUn
   const llmConfig = buildLLMConfig({ providerKeys, activeProvider, activeModels, customBaseUrl });
   const { handleGenerate, streamingText } = useReaderGeneration({
     lessonKey, lessonMeta, reader, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput, nativeLang,
+    syllabus, generatedReaders,
   });
 
   // Cancel speech & close popovers when lesson changes

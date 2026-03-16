@@ -1,4 +1,4 @@
-export function buildReaderSystem(langConfig, level, topic, charRange, targetChars = 1200, nativeLangName = 'English') {
+export function buildReaderSystem(langConfig, level, topic, charRange, targetChars = 1200, nativeLangName = 'English', { difficultyHint } = {}) {
   const p = langConfig.prompts;
   const profName = langConfig.proficiency.name;
 
@@ -28,6 +28,7 @@ CRITICAL: Follow the exact section format below. Never omit sections or change h
 - Length: ${charRange} ${langConfig.charUnit}
 - Topic: ${topic}
 ${p.getStoryRequirements(level)}
+- Where natural, reuse previously-learned vocabulary to reinforce retention${difficultyHint === 'review' ? '\n- Use simpler grammar and shorter sentences, reviewing fundamentals' : ''}${difficultyHint === 'stretch' ? '\n- Introduce a few patterns from the next level up as preview' : ''}
 
 ## OUTPUT FORMAT
 

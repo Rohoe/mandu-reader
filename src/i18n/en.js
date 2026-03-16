@@ -460,6 +460,12 @@ export default {
   'syllabusHome.confirmDelete': 'Permanently delete "{topic}" and all its progress?',
   'syllabusHome.archiveSyllabus': 'Archive Syllabus',
   'syllabusHome.deleteSyllabus': 'Delete Syllabus',
+  'syllabusHome.whatYouveLearned': 'What you\'ve learned',
+  'syllabusHome.wordsLearned': '{count} words learned',
+  'syllabusHome.grammarPatterns': 'Grammar patterns covered',
+  'syllabusHome.totalRead': 'Total {unit} read: {count}',
+  'syllabusHome.showAll': 'Show all',
+  'syllabusHome.showLess': 'Show less',
 
   // ── ApiKeySetup (legacy) ──────────────────────────────────────
   'apiKeySetup.title': 'Mandarin Graded Reader',

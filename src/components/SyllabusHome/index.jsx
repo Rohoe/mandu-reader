@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAppSelector } from '../../context/useAppSelector';
 import { getLang, getLessonTitle } from '../../lib/languages';
 import { useT } from '../../i18n';
@@ -6,14 +6,17 @@ import LoadingIndicator from '../LoadingIndicator';
 import './SyllabusHome.css';
 
 export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDelete, onArchive, onExtend }) {
-  const { loading, loadingMessage } = useAppSelector(s => ({
+  const { loading, loadingMessage, generatedReaders } = useAppSelector(s => ({
     loading: s.loading,
     loadingMessage: s.loadingMessage,
+    generatedReaders: s.generatedReaders,
   }));
   const t = useT();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [additionalCount, setAdditionalCount] = useState(3);
+  const [learningSummaryOpen, setLearningSummaryOpen] = useState(false);
+  const [vocabExpanded, setVocabExpanded] = useState(false);
 
   if (!syllabus) return null;
 
@@ -30,6 +33,35 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
   const firstIncompleteIdx = lessons.findIndex((_, idx) => !completedSet.has(idx));
   const continueIdx = firstIncompleteIdx === -1 ? 0 : firstIncompleteIdx;
   const allDone = completedCount === lessons.length && lessons.length > 0;
+
+  // Aggregate learning summary from completed readers
+  const learningSummary = useMemo(() => {
+    if (!syllabus?.id || completedCount === 0) return null;
+    const allVocab = [];
+    const allGrammar = [];
+    let totalLength = 0;
+    for (const idx of (progress?.completedLessons || [])) {
+      const reader = generatedReaders[`lesson_${syllabus.id}_${idx}`];
+      if (!reader) continue;
+      if (reader.vocabulary) {
+        for (const v of reader.vocabulary) {
+          if (v.target && !allVocab.some(existing => existing.target === v.target)) {
+            allVocab.push(v);
+          }
+        }
+      }
+      if (reader.grammarNotes) {
+        for (const g of reader.grammarNotes) {
+          if (g.pattern && !allGrammar.some(existing => existing.pattern === g.pattern)) {
+            allGrammar.push(g);
+          }
+        }
+      }
+      if (reader.story) totalLength += reader.story.length;
+    }
+    if (allVocab.length === 0 && allGrammar.length === 0 && totalLength === 0) return null;
+    return { vocab: allVocab, grammar: allGrammar, totalLength };
+  }, [syllabus?.id, completedCount, progress?.completedLessons, generatedReaders]);
 
   function handleDelete() {
     setConfirmingDelete(false);
@@ -106,6 +138,68 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
           })}
         </ul>
       </section>
+
+      {/* ── Learning summary ──────────────────── */}
+      {learningSummary && (
+        <section className="syllabus-home__section">
+          <button
+            className="syllabus-home__section-title syllabus-home__summary-toggle"
+            onClick={() => setLearningSummaryOpen(o => !o)}
+          >
+            {t('syllabusHome.whatYouveLearned')} {learningSummaryOpen ? '▾' : '▸'}
+          </button>
+
+          {learningSummaryOpen && (
+            <div className="syllabus-home__learning-summary">
+              {/* Vocabulary */}
+              {learningSummary.vocab.length > 0 && (
+                <div className="syllabus-home__summary-block">
+                  <div className="syllabus-home__summary-row">
+                    <span className="syllabus-home__summary-label">{t('syllabusHome.wordsLearned', { count: learningSummary.vocab.length })}</span>
+                    {learningSummary.vocab.length > 6 && (
+                      <button className="btn btn-ghost btn-sm" onClick={() => setVocabExpanded(v => !v)}>
+                        {vocabExpanded ? t('syllabusHome.showLess') : t('syllabusHome.showAll')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="syllabus-home__vocab-chips">
+                    {(vocabExpanded ? learningSummary.vocab : learningSummary.vocab.slice(0, 6)).map((v, i) => (
+                      <span key={i} className="syllabus-home__vocab-chip text-target">{v.target}</span>
+                    ))}
+                    {!vocabExpanded && learningSummary.vocab.length > 6 && (
+                      <span className="syllabus-home__vocab-chip syllabus-home__vocab-chip--more text-muted">+{learningSummary.vocab.length - 6}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Grammar */}
+              {learningSummary.grammar.length > 0 && (
+                <div className="syllabus-home__summary-block">
+                  <span className="syllabus-home__summary-label">{t('syllabusHome.grammarPatterns')}</span>
+                  <ul className="syllabus-home__grammar-list">
+                    {learningSummary.grammar.map((g, i) => (
+                      <li key={i} className="syllabus-home__grammar-item">
+                        <span className="text-target">{g.pattern}</span>
+                        {g.label && <span className="text-muted"> — {g.label}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Total read */}
+              {learningSummary.totalLength > 0 && (
+                <div className="syllabus-home__summary-block">
+                  <span className="syllabus-home__summary-label text-muted">
+                    {t('syllabusHome.totalRead', { unit: langConfig.charUnitShort, count: learningSummary.totalLength.toLocaleString() })}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Continue CTA ───────────────────────── */}
       {lessons.length > 0 && (

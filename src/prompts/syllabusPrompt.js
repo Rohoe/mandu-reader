@@ -14,6 +14,7 @@ Return a JSON object with exactly two keys:
   - "title_en": ${nativeLangName} lesson title
   - "description": One ${nativeLangName} sentence describing what the reader covers
   - "vocabulary_focus": 3-5 ${nativeLangName} keywords describing the vocabulary theme
+  - "difficulty_hint": one of "review", "core", or "stretch" — indicating relative difficulty within the level. Early lessons should use "review" to ease in, most lessons use "core", and a few later lessons use "stretch" to preview the next level
 
 Return ONLY valid JSON. No explanation, no markdown fences.`;
 }
