@@ -8,7 +8,7 @@ Single-page React + Vite app that generates graded readers in **Mandarin Chinese
 npm install        # first time only
 npm run dev        # http://localhost:5173
 npm run build      # production build
-npm test           # unit tests (Vitest, 497 tests)
+npm test           # unit tests (Vitest, 515 tests)
 npm run test:e2e   # E2E tests (Playwright, 22 tests)
 ```
 
@@ -21,9 +21,9 @@ src/
   App.jsx              Root layout, UI-only state (sidebar, modals, activeSyllabusId, standaloneKey, syllabusView)
   context/             useReducer global store (AppContext.jsx), useApp hook, actions factory, reducers/ (8 domain slices)
   i18n/                UI string translations: useT() hook, en/zh/yue/ko/fr/es language files
-  lib/                 Core logic: api.js, parser.js, storage.js, languages.js, nativeLanguages.js, providers.js, cloudSync.js, anki.js, stats.js
-  prompts/             LLM prompt builders (syllabus, reader, grading, extend)
-  hooks/               useTTS, useRomanization, useVocabPopover, useReaderGeneration, useFocusTrap, useReadingTimer, usePWA
+  lib/                 Core logic: api.js, chatApi.js, parser.js, storage.js, languages.js, nativeLanguages.js, providers.js, cloudSync.js, anki.js, stats.js
+  prompts/             LLM prompt builders (syllabus, reader, grading, extend, tutor)
+  hooks/               useTTS, useRomanization, useVocabPopover, useReaderGeneration, useTutorChat, useFocusTrap, useReadingTimer, usePWA
   components/          UI components (see docs/components.md for details)
 e2e/                   Playwright E2E specs + fixtures
 ```
@@ -39,6 +39,7 @@ e2e/                   Playwright E2E specs + fixtures
 - **Parsing:** Regex parser (default) in `parser.js`, structured JSON parser (opt-in) via `normalizeStructuredReader()`.
 - **Syllabus→Reader connection:** Syllabus lesson metadata (`vocabulary_focus`, `difficulty_hint`) is threaded into reader prompts. `useReaderGeneration` builds cumulative context (prior lesson summaries, taught grammar patterns) so each lesson builds on previous ones. `SyllabusHome` aggregates a learning summary from completed readers.
 - **Streaming:** Anthropic provider supports streaming responses via `generateReaderStream()` async generator. Text streams progressively to UI, then parses on completion.
+- **AI Tutor Chat:** `src/lib/chatApi.js` provides multi-turn `callLLMChat`/`callLLMChatStream` for all providers. `src/prompts/tutorPrompt.js` builds context-rich system prompts. `src/hooks/useTutorChat.js` manages chat state, persists `chatHistory`/`chatSummary` on reader objects via `SET_READER`. "Open in Claude/ChatGPT" always available (copies lesson context to clipboard). UI in `src/components/TutorChat/`.
 
 ## Lesson keys
 

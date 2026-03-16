@@ -22,6 +22,7 @@
 | `providers.js` | Provider registry. Exports `PROVIDERS`, `getProvider(id)`, `DEFAULT_PROVIDER`. Four providers: anthropic, openai, gemini, openai_compatible (presets: DeepSeek, Groq, custom). |
 | `llmConfig.js` | `buildLLMConfig(state)` → `{ provider, apiKey, model, baseUrl }` |
 | `api.js` | LLM API calls: `generateSyllabus()`, `generateReader()`, `generateReaderStream()`, `extendSyllabus()`, `gradeAnswers()`. All accept `llmConfig` first, `langId` last. `generateReaderStream()` is an async generator for Anthropic SSE streaming. `callLLM()` dispatches to provider-specific functions. `fetchWithRetry()` for backoff. `callLLMStructured()` for structured output. `buildReaderUserMessage()` accepts syllabus-aware options: `vocabFocus`, `syllabusContext`, `taughtGrammar`. Story continuation uses smart truncation (preserves beginning + end). Exports `isRetryable` for testing. |
+| `chatApi.js` | Multi-turn chat API for tutor feature. `callLLMChat()` sends full message array to any provider. `callLLMChatStream()` async generator for Anthropic streaming, falls back to non-streaming for others. Provider message format mapping (Anthropic: system param; OpenAI: system role; Gemini: system_instruction + user/model roles). Sliding window keeps last 20 messages. `buildExternalTutorPrompt()` generates self-contained prompt for pasting into Claude/ChatGPT. |
 | `difficultyValidator.js` | `assessDifficulty(vocab, learnedVocabulary, level)` computes new-word ratio and returns an assessment label/class. Used by ReaderHeader to show a difficulty badge. |
 | `stats.js` | `computeStats(state)`, `getStreak()`, `getWordsByPeriod()` |
 | `storage.js` | localStorage helpers with file fan-out via `setDirectoryHandle()`. Per-reader lazy storage. LRU eviction (>30 cached, >30 days). Provider keys NOT synced to file/cloud. |
@@ -40,6 +41,7 @@
 | `readerSystemPrompt.js` | `buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint })` — adds reinforcement and difficulty guidance |
 | `gradingPrompt.js` | `buildGradingSystem(langConfig, level)` |
 | `extendSyllabusPrompt.js` | `buildExtendSyllabusPrompt(langConfig, topic, level, existingLessons, additionalCount)` |
+| `tutorPrompt.js` | `buildTutorSystemPrompt(reader, lessonMeta, langConfig, nativeLangName)` — context-rich system prompt for AI tutor with story, vocabulary, grammar, quiz results, syllabus metadata |
 
 ### `src/hooks/`
 
@@ -49,6 +51,7 @@
 | `useRomanization.jsx` | Async romanizer loading, `renderChars()` with ruby tags. Parses markdown segments before applying romanization. |
 | `useVocabPopover.js` | Vocab map, click handler, popover positioning, close logic |
 | `useReaderGeneration.js` | Generate/regenerate API calls + state updates. AbortController for abort-on-unmount. Returns `streamingText` for Anthropic streaming preview. When inside a syllabus, builds cumulative context (vocab focus, prior lessons, taught grammar, difficulty hint) from `syllabus` and `generatedReaders` props. |
+| `useTutorChat.js` | Chat state + API hook for tutor feature. Manages messages, streaming text, summary, error state. Persists `chatHistory` and `chatSummary` on the reader object via `SET_READER`. AbortController for cancellation. `sendMessage()`, `generateSummary()`, `clearChat()`, `stopGenerating()`. |
 | `useFocusTrap.js` | Focus trap for popovers. Keeps keyboard focus within the active popover until dismissed. |
 | `useReadingTimer.js` | Tracks reading time per reader. Starts on mount, pauses on blur/idle, resumes on focus. Stores `readingTime` (seconds) in reader state. |
 | `usePWA.js` | PWA install prompt hook. Captures `beforeinstallprompt` event, exposes `canInstall` flag and `promptInstall()` method. |

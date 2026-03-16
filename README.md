@@ -13,6 +13,7 @@ A single-page web app for generating graded readers in **Mandarin Chinese**, **C
 - **Anki Export** — Download flashcard files (.txt) with duplicate prevention; includes both vocabulary cards and grammar pattern cards (tagged `Grammar`)
 - **Offline persistence** — All data stored in `localStorage`; pick up where you left off. Automatic LRU eviction frees space when >30 readers are cached (only evicts readers backed up to cloud or file storage); evicted readers show a one-click "Restore from backup" button
 - **Grammar Notes** — Each reader includes 3–5 collapsible grammar pattern cards explaining structures used in the story, with examples
+- **AI Tutor Chat** — Interactive right-side drawer where you can chat with an AI tutor about your current lesson. Suggestion chips for quick actions (quiz on vocab, explain grammar, discuss the story, summarize lesson). Streaming responses with Anthropic, non-streaming fallback for other providers. Chat history and lesson summaries persist on the reader. "Open in Claude" / "Open in ChatGPT" buttons always available — copies lesson context to clipboard and opens external AI in a new tab
 - **Comprehension grading** — Type answers to comprehension questions and get AI-powered feedback with per-question scores; every question includes a toggleable suggested model answer; results persist across sessions
 - **Syllabus home page** — Overview of all lessons with completion badges, a summary, Continue CTA, and delete button with confirmation
 - **Configurable length** — Sliders for syllabus lesson count (2–12) and reader story length (150–2000 characters). Short readers (≤250 chars) automatically scale down to fewer vocabulary words, questions, and grammar notes — ideal for absolute beginners
@@ -151,7 +152,7 @@ npm run test:e2e      # run E2E tests (Playwright)
 npm run test:e2e:ui   # Playwright UI mode
 ```
 
-- **497 unit tests** (Vitest) — parser, reducer, stats, anki, storage, cloudSync, useReaderGeneration, difficultyValidator, and more
+- **515 unit tests** (Vitest) — parser, reducer, stats, anki, storage, cloudSync, useReaderGeneration, difficultyValidator, chatApi, tutorPrompt, and more
 - **22 E2E tests** (Playwright) — demo reader, settings, reader generation, flashcards, mobile layout
 
 ## Tech stack

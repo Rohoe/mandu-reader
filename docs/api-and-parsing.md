@@ -14,6 +14,8 @@
 - `callLLM(llmConfig, systemPrompt, userMessage, maxTokens)` → dispatches to `callAnthropic`, `callOpenAI`, `callGemini`
 - `callLLMStructured(...)` → `callAnthropicStructured` (tool use), `callOpenAIStructured` (json_schema), `callGeminiStructured` (responseMimeType); OpenAI-compatible falls back to `callLLM`
 - `generateReaderStream(llmConfig, ...)` → async generator yielding text chunks via Anthropic SSE streaming (`stream: true`). Anthropic-only; used by `useReaderGeneration` to show a live streaming preview while generating.
+- `callLLMChat(llmConfig, systemPrompt, messages[], maxTokens)` → multi-turn chat for tutor feature. Provider-specific message formatting: Anthropic uses `system` param + `messages[]`; OpenAI prepends system message to `messages[]`; Gemini uses `system_instruction` + `contents[]` with user/model roles. Sliding window keeps last 20 messages.
+- `callLLMChatStream(llmConfig, ...)` → async generator for streaming chat (Anthropic only; non-streaming fallback for others)
 - AbortController with 60s timeout; `generateReader` accepts external signal
 - `fetchWithRetry()`: exponential backoff (2 retries for 5xx/429)
 - Prompt templates are provider-agnostic, built from `langConfig.prompts`
@@ -25,6 +27,7 @@
 - **Reader (structured mode):** JSON matching `READER_JSON_SCHEMA`: `title_target`, `title_en`, `story`, `vocabulary[]`, `questions[]`, `grammar_notes[]`
 - `learnedVocabulary` keys passed to LLM — not repeated as new vocab, but 3–5 are actively reinforced in the story
 - **Syllabus-aware generation:** When generating within a syllabus, the reader prompt includes: `vocabFocus` (lesson's vocabulary themes), `syllabusContext` (prior lesson summaries and position), `taughtGrammar` (grammar patterns from completed lessons to avoid repetition), and `difficultyHint` (adjusts grammar complexity). Built by `useReaderGeneration` from syllabus + reader state.
+- **Tutor:** `buildTutorSystemPrompt()` injects story text, vocabulary list, grammar notes, quiz performance, and syllabus metadata into the system prompt (~1000 tokens). `buildExternalTutorPrompt()` generates a self-contained prompt for pasting into Claude or ChatGPT (copies to clipboard, opens external AI in new tab).
 
 ## Response parsing (lib/parser.js)
 
