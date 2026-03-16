@@ -29,9 +29,10 @@ import ReaderStreamingPreview from './ReaderStreamingPreview';
 import ReaderGeneratingState from './ReaderGeneratingState';
 import ReaderEvictedState from './ReaderEvictedState';
 import ReaderPregenerate from './ReaderPregenerate';
+import ChatSummary from '../TutorChat/ChatSummary';
 import './ReaderView.css';
 
-export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComplete, onUnmarkComplete, isCompleted, onContinueStory, onOpenSidebar, onOpenSettings }) {
+export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComplete, onUnmarkComplete, isCompleted, onContinueStory, onOpenSidebar, onOpenSettings, onOpenChat }) {
   const t = useT();
   // Track which lesson keys we've already tried to load from cache
   const loadedKeysRef = useRef(new Set());
@@ -417,6 +418,11 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
       {/* Grammar notes */}
       <GrammarNotes grammarNotes={reader.grammarNotes} renderChars={renderChars} />
 
+      {/* Chat summary (from tutor conversation) */}
+      {reader.chatSummary && (
+        <ChatSummary summary={reader.chatSummary} collapsible />
+      )}
+
       {/* Anki export */}
       {reader.ankiJson?.length > 0 && (
         <AnkiExportButton
@@ -446,6 +452,13 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
         isPending={isPending}
         langId={langId}
       />
+
+      {/* Tutor chat FAB */}
+      {onOpenChat && (
+        <button className="tutor-fab" onClick={onOpenChat} aria-label={t('tutor.fab')} title={t('tutor.chatWithTutor')}>
+          💬
+        </button>
+      )}
     </article>
   );
 }

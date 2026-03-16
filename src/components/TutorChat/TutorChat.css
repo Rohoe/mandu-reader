@@ -1,0 +1,392 @@
+/* ── Overlay ──────────────────────────────────────────────── */
+.tutor-chat__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 24, 20, 0.35);
+  z-index: 99;
+}
+
+/* ── Drawer ───────────────────────────────────────────────── */
+.tutor-chat__drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 400px;
+  max-width: 100vw;
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  animation: tutorSlideIn 0.2s ease;
+}
+
+@keyframes tutorSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.tutor-chat__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.tutor-chat__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  margin: 0;
+}
+
+.tutor-chat__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.tutor-chat__close {
+  font-size: var(--text-lg);
+}
+
+/* ── Messages area ────────────────────────────────────────── */
+.tutor-chat__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Welcome text ─────────────────────────────────────────── */
+.tutor-chat__welcome {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  padding: var(--space-8) var(--space-4);
+  line-height: var(--leading-relaxed);
+}
+
+/* ── Message bubbles ──────────────────────────────────────── */
+.tutor-chat__message {
+  max-width: 85%;
+  animation: msgFadeIn 0.15s ease;
+}
+
+@keyframes msgFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tutor-chat__message--user {
+  align-self: flex-end;
+}
+
+.tutor-chat__message--assistant {
+  align-self: flex-start;
+}
+
+.tutor-chat__message-content {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tutor-chat__message--user .tutor-chat__message-content {
+  background: var(--color-accent);
+  color: #fff;
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.tutor-chat__message--assistant .tutor-chat__message-content {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+/* ── Streaming cursor ─────────────────────────────────────── */
+.tutor-chat__cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--color-accent);
+  vertical-align: text-bottom;
+  margin-left: 1px;
+  animation: tutorBlink 0.8s step-end infinite;
+}
+
+@keyframes tutorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── Typing dots ──────────────────────────────────────────── */
+.tutor-chat__typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-3) var(--space-4) !important;
+}
+
+.tutor-chat__typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  animation: tutorDot 1.2s ease-in-out infinite;
+}
+
+.tutor-chat__typing span:nth-child(2) { animation-delay: 0.2s; }
+.tutor-chat__typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes tutorDot {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Error ────────────────────────────────────────────────── */
+.tutor-chat__error {
+  background: var(--color-error-light);
+  border: 1px solid #D4AAAA;
+  color: var(--color-error);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* ── Stop row ─────────────────────────────────────────────── */
+.tutor-chat__stop-row {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-1) 0;
+  flex-shrink: 0;
+}
+
+/* ── Input area ───────────────────────────────────────────── */
+.tutor-chat__input-area {
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+}
+
+/* ── Suggestion chips ─────────────────────────────────────── */
+.tutor-chat__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.tutor-chat__chip {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+  white-space: nowrap;
+}
+
+.tutor-chat__chip:hover {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent-dim);
+  color: var(--color-accent-hover);
+}
+
+.tutor-chat__chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── Input row ────────────────────────────────────────────── */
+.tutor-chat__input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.tutor-chat__textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 38px;
+  max-height: 120px;
+}
+
+.tutor-chat__textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+.tutor-chat__textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.tutor-chat__send-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-accent);
+  color: #fff;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity var(--transition);
+}
+
+.tutor-chat__send-btn:hover { opacity: 0.85; }
+.tutor-chat__send-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── No API key notice ────────────────────────────────────── */
+.tutor-chat__no-key {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ── External links ───────────────────────────────────────── */
+.tutor-chat__external {
+  display: flex;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-3);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.tutor-chat__external-btn {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  text-align: center;
+}
+
+.tutor-chat__external-btn:hover {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+/* ── Summary card ─────────────────────────────────────────── */
+.tutor-chat__summary-card {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-accent-dim);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tutor-chat__summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-accent-hover);
+  text-align: left;
+}
+
+.tutor-chat__summary-header:disabled {
+  cursor: default;
+}
+
+.tutor-chat__summary-toggle {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.tutor-chat__summary-body {
+  padding: 0 var(--space-3) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ── FAB button (used in ReaderView) ──────────────────────── */
+.tutor-fab {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  z-index: 40;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.tutor-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(74, 124, 126, 0.4);
+}
+
+.tutor-fab:active {
+  transform: scale(0.95);
+}
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .tutor-chat__drawer {
+    width: 100vw;
+    border-left: none;
+  }
+
+  .tutor-chat__header {
+    padding-top: max(var(--space-3), env(safe-area-inset-top));
+  }
+
+  .tutor-fab {
+    bottom: max(var(--space-6), calc(env(safe-area-inset-bottom) + var(--space-4)));
+    right: var(--space-4);
+  }
+}

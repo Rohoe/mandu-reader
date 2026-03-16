@@ -18,6 +18,7 @@ import Settings from './components/Settings';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardReview from './components/FlashcardReview';
 import SignInModal from './components/SignInModal';
+import TutorChat from './components/TutorChat';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingIndicator from './components/LoadingIndicator';
@@ -63,6 +64,7 @@ function AppShell() {
   const [showNewForm,    setShowNewForm]     = useState(false);
   const [showSignIn,     setShowSignIn]      = useState(false);
   const [sidebarOpen,    setSidebarOpen]     = useState(false);
+  const [chatOpen,       setChatOpen]       = useState(false);
 
   // Restore last session, falling back to first non-archived syllabus
   const [activeSyllabusId, setActiveSyllabusId] = useState(() => {
@@ -339,6 +341,7 @@ function AppShell() {
               onContinueStory={handleContinueStory}
               onOpenSidebar={() => setSidebarOpen(true)}
               onOpenSettings={() => setShowSettings(true)}
+              onOpenChat={() => setChatOpen(true)}
             />
           )
         }
@@ -390,6 +393,19 @@ function AppShell() {
             />
           </div>
         </div>
+      )}
+
+      {/* ─ Tutor chat drawer ──────────────────────────────── */}
+      {chatOpen && activeLessonKey && (
+        <ErrorBoundary name="tutor-chat">
+          <TutorChat
+            lessonKey={activeLessonKey}
+            reader={state.generatedReaders[activeLessonKey]}
+            lessonMeta={standaloneKey ? null : activeMeta}
+            syllabus={standaloneKey ? null : currentSyllabus}
+            onClose={() => setChatOpen(false)}
+          />
+        </ErrorBoundary>
       )}
 
       {/* ─ Toast notification ────────────────────────────── */}
