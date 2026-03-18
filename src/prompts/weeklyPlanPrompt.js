@@ -31,7 +31,7 @@ You can assign these activity types:
 - "flashcards": SRS vocabulary review session (10 min). No topic needed.
 - "quiz": Comprehension quiz on a previous reading (10 min). Reference a reading from this week.
 - "tutor": Conversational practice with AI tutor (15 min). Suggest conversation topics.
-- "review": Review reader targeting struggling vocabulary (15 min). Focus on reinforcement.
+- "review": Vocabulary quiz (matching, fill-in-blank, listening) reviewing learned words (10 min). If the Learner Profile lists struggling words, use those as vocabFocus.
 
 ## Instructions
 Design a 7-day study plan (Monday through Sunday) that:
@@ -56,7 +56,7 @@ Return a JSON object with exactly these keys:
       - For "flashcards": {}
       - For "quiz": { "readingTitle": string (reference a reading from this week) }
       - For "tutor": { "suggestedTopics": [2-3 conversation starters] }
-      - For "review": {}
+      - For "review": { "vocabFocus": [3-5 struggling words to reinforce] }
 
 Return ONLY valid JSON. No explanation, no markdown fences.`;
 }

@@ -83,6 +83,7 @@ function AppShell() {
     return session?.planId || null;
   });
   const [showPlanOnboarding, setShowPlanOnboarding] = useState(false);
+  const [flashcardConfig, setFlashcardConfig] = useState(null);
 
   // Restore last session, falling back to first non-archived syllabus
   const [activeSyllabusId, setActiveSyllabusId] = useState(() => {
@@ -376,24 +377,34 @@ function AppShell() {
               planId={activePlanId}
               onActivityOpen={({ planId, dayIndex, activity }) => {
                 // Route activity to existing views
-                if (activity.type === 'reading' || activity.type === 'review') {
+                if (activity.type === 'reading') {
                   // Generate a standalone reader for this activity
                   const readerKey = `plan_${planId}_${activity.id}`;
-                  const existingReader = state.generatedReaders[readerKey];
                   const existingMeta = state.standaloneReaders.some(r => r.key === readerKey);
                   if (!existingMeta) {
-                    // Create standalone reader metadata (only if not already in sidebar)
                     const config = activity.config || {};
-                    act.addStandaloneReader({
+                    const meta = {
                       key: readerKey,
                       topic: config.topic || activity.title,
                       level: config.level || state.learningPlans[planId]?.currentLevel,
                       langId: state.learningPlans[planId]?.langId || 'zh',
                       createdAt: Date.now(),
-                    });
+                    };
+                    act.addStandaloneReader(meta);
                   }
                   setStandaloneKey(readerKey);
                   setSyllabusView('lesson');
+                } else if (activity.type === 'review') {
+                  // Open FlashcardReview in a random quiz mode
+                  const quizModes = ['matching', 'fillblank', 'listening'];
+                  const mode = quizModes[Math.floor(Math.random() * quizModes.length)];
+                  const config = activity.config || {};
+                  setFlashcardConfig({
+                    initialLangId: state.learningPlans[planId]?.langId || 'zh',
+                    initialMode: mode,
+                    vocabFilter: config.vocabFocus || null,
+                  });
+                  setShowFlashcards(true);
                 } else if (activity.type === 'flashcards') {
                   setShowFlashcards(true);
                   // Don't auto-complete — user can mark done via undo/complete
@@ -403,10 +414,10 @@ function AppShell() {
                   const week = plan?.currentWeek;
                   let tutorReaderKey = null;
                   if (week) {
-                    // Scan days for a reading/review activity with a generated reader
+                    // Scan days for a reading activity with a generated reader
                     for (const day of week.days) {
                       for (const a of day.activities) {
-                        if ((a.type === 'reading' || a.type === 'review') && a.status === 'completed') {
+                        if (a.type === 'reading' && a.status === 'completed') {
                           const candidateKey = `plan_${planId}_${a.id}`;
                           if (state.generatedReaders[candidateKey]) {
                             tutorReaderKey = candidateKey;
@@ -513,7 +524,10 @@ function AppShell() {
       {/* ─ Flashcard review modal ──────────────────────────── */}
       {showFlashcards && (
         <ErrorBoundary name="flashcards">
-          <FlashcardReview onClose={() => setShowFlashcards(false)} />
+          <FlashcardReview
+            {...flashcardConfig}
+            onClose={() => { setShowFlashcards(false); setFlashcardConfig(null); }}
+          />
         </ErrorBoundary>
       )}
 

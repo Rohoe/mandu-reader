@@ -22,7 +22,7 @@ function formatInterval(days) {
   return `${Math.round(days / 30)}mo`;
 }
 
-export default function FlashcardReview({ onClose }) {
+export default function FlashcardReview({ onClose, initialLangId, initialMode, vocabFilter }) {
   const t = useT();
   const { learnedVocabulary, newCardsPerDay, romanizationOn } = useAppSelector(s => ({
     learnedVocabulary: s.learnedVocabulary,
@@ -41,11 +41,12 @@ export default function FlashcardReview({ onClose }) {
     return languages.filter(l => langIds.has(l.id));
   }, [learnedVocabulary, languages]);
 
-  const [langFilter, setLangFilter] = useState(() =>
-    availableLangs.length > 0 ? availableLangs[0].id : 'zh'
-  );
+  const [langFilter, setLangFilter] = useState(() => {
+    if (initialLangId && availableLangs.some(l => l.id === initialLangId)) return initialLangId;
+    return availableLangs.length > 0 ? availableLangs[0].id : 'zh';
+  });
 
-  const [quizMode, setQuizMode] = useState('flashcard'); // 'flashcard' | 'fillblank' | 'listening' | 'matching'
+  const [quizMode, setQuizMode] = useState(initialMode || 'flashcard'); // 'flashcard' | 'fillblank' | 'listening' | 'matching'
 
   // Romanization for flashcard front
   const langConfig = getLang(langFilter);
@@ -85,7 +86,18 @@ export default function FlashcardReview({ onClose }) {
     }));
   }, [learnedVocabulary]);
 
-  const langCards = useMemo(() => allCards.filter(c => c.langId === langFilter), [allCards, langFilter]);
+  const langCards = useMemo(() => {
+    const filtered = allCards.filter(c => c.langId === langFilter);
+    if (vocabFilter?.length > 0) {
+      const filterSet = new Set(vocabFilter);
+      filtered.sort((a, b) => {
+        const aMatch = filterSet.has(a.target) ? 0 : 1;
+        const bMatch = filterSet.has(b.target) ? 0 : 1;
+        return aMatch - bMatch;
+      });
+    }
+    return filtered;
+  }, [allCards, langFilter, vocabFilter]);
 
   // Session management (per-language persistence)
   const [session, setSession] = useState(() => {

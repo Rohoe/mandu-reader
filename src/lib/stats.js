@@ -412,16 +412,25 @@ export function buildLearnerProfile(learnedVocabulary, generatedReaders, syllabi
 
   const sections = [];
 
-  // Vocab counts
+  // Vocab counts + struggling words
   let mastered = 0, learning = 0, newCount = 0;
-  for (const [, info] of langWords) {
+  const struggling = [];
+  for (const [word, info] of langWords) {
     const rc = info.reviewCount ?? 0;
     const interval = info.interval ?? 0;
+    const lapses = info.lapses ?? 0;
     if (rc === 0) newCount++;
     else if (interval >= 21) mastered++;
     else learning++;
+    if (lapses >= 2 || (interval <= 1 && rc >= 3)) {
+      struggling.push({ word, lapses, interval });
+    }
   }
   sections.push(`Known vocabulary: ${langWords.length} words (${mastered} mastered, ${learning} learning, ${newCount} new)`);
+  if (struggling.length > 0) {
+    struggling.sort((a, b) => b.lapses - a.lapses || a.interval - b.interval);
+    sections.push(`Struggling words: ${struggling.slice(0, 10).map(s => s.word).join(', ')}`);
+  }
 
   // Grammar patterns from readers
   const grammarSet = new Set();

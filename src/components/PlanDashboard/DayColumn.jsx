@@ -16,9 +16,9 @@ export default function DayColumn({ day, dayIndex, dayName, isToday, onActivityC
   const totalMinutes = activities.reduce((sum, a) => sum + (a.estimatedMinutes || 0), 0);
 
   // Activities that depend on a reading being completed first
-  const dependentTypes = new Set(['flashcards', 'quiz', 'tutor']);
+  const dependentTypes = new Set(['flashcards', 'quiz', 'tutor', 'review']);
   const hasCompletedReading = activities.some(
-    a => (a.type === 'reading' || a.type === 'review') && a.status === 'completed'
+    a => a.type === 'reading' && a.status === 'completed'
   );
 
   return (
