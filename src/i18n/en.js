@@ -363,6 +363,15 @@ export default {
   'comprehension.incorrect': 'Incorrect — the answer is {answer}.',
   'comprehension.yourChoice': 'Your choice: {choice}',
   'comprehension.checkAnswer': 'Check',
+  'comprehension.checkAnswers': 'Check Answers',
+  'comprehension.true': 'True',
+  'comprehension.false': 'False',
+  'comprehension.incorrectTF': 'Incorrect — the answer is {answer}.',
+  'comprehension.fillBlank': 'Fill in the blank',
+  'comprehension.incorrectFB': 'Incorrect — the answer is {answer}.',
+  'comprehension.matchVocab': 'Match the words with their definitions',
+  'comprehension.checkMatches': 'Check Matches',
+  'comprehension.matchesResult': '{count}/{total} correct',
 
   // ── Grammar notes ─────────────────────────────────────────────
   'grammar.title': 'Grammar Notes',

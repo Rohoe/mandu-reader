@@ -388,6 +388,125 @@ function parseQuestions(text) {
       continue;
     }
 
+    // Check for [TF] tag
+    const tfMatch = cleaned.match(/^\[TF\]\s*(.*)/i);
+    if (tfMatch) {
+      const qText = tfMatch[1].trim();
+      let correctAnswer = null;
+      let j = i + 1;
+      if (j < lines.length) {
+        const ansLine = lines[j].trim();
+        const ansMatch = ansLine.match(/^Answer:\s*([TF])/i);
+        if (ansMatch) {
+          correctAnswer = ansMatch[1].toUpperCase();
+          j++;
+        }
+      }
+      if (correctAnswer) {
+        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
+        questions.push({
+          type: 'tf',
+          text: transMatch ? transMatch[1] : qText,
+          translation: transMatch ? transMatch[2] : '',
+          correctAnswer,
+        });
+      } else {
+        // Malformed TF → fallback to FR
+        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
+        questions.push({
+          type: 'fr',
+          text: transMatch ? transMatch[1] : qText,
+          translation: transMatch ? transMatch[2] : '',
+        });
+      }
+      i = j;
+      continue;
+    }
+
+    // Check for [FB] tag
+    const fbMatch = cleaned.match(/^\[FB\]\s*(.*)/i);
+    if (fbMatch) {
+      const qText = fbMatch[1].trim();
+      let correctAnswer = null;
+      let bank = null;
+      let j = i + 1;
+      // Look for Answer: line
+      if (j < lines.length) {
+        const ansLine = lines[j].trim();
+        const ansMatch = ansLine.match(/^Answer:\s*(.+)/i);
+        if (ansMatch) {
+          correctAnswer = ansMatch[1].trim();
+          j++;
+        }
+      }
+      // Look for Bank: line
+      if (j < lines.length) {
+        const bankLine = lines[j].trim();
+        const bankMatch = bankLine.match(/^Bank:\s*(.+)/i);
+        if (bankMatch) {
+          bank = bankMatch[1].split(',').map(w => w.trim()).filter(Boolean);
+          j++;
+        }
+      }
+      if (correctAnswer && bank && bank.length >= 2) {
+        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
+        questions.push({
+          type: 'fb',
+          text: transMatch ? transMatch[1] : qText,
+          translation: transMatch ? transMatch[2] : '',
+          correctAnswer,
+          bank,
+        });
+      } else {
+        // Malformed FB → fallback to FR
+        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
+        questions.push({
+          type: 'fr',
+          text: transMatch ? transMatch[1] : qText,
+          translation: transMatch ? transMatch[2] : '',
+        });
+      }
+      i = j;
+      continue;
+    }
+
+    // Check for [VM] tag
+    const vmMatch = cleaned.match(/^\[VM\]\s*(.*)/i);
+    if (vmMatch) {
+      const qText = vmMatch[1].trim();
+      const pairs = [];
+      let j = i + 1;
+      while (j < lines.length) {
+        const pairLine = lines[j].trim();
+        const pairMatch = pairLine.match(/^\d+\.\s*(.+?)\s*=\s*(.+)/);
+        if (pairMatch) {
+          pairs.push({ word: pairMatch[1].trim(), definition: pairMatch[2].trim() });
+          j++;
+        } else {
+          break;
+        }
+      }
+      if (pairs.length >= 2) {
+        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
+        questions.push({
+          type: 'vm',
+          text: transMatch ? transMatch[1] : qText,
+          translation: transMatch ? transMatch[2] : '',
+          pairs,
+        });
+      } else {
+        // Malformed VM → fallback to FR
+        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
+        questions.push({
+          type: 'fr',
+          text: transMatch ? transMatch[1] : qText,
+          translation: transMatch ? transMatch[2] : '',
+        });
+      }
+      i = j;
+      continue;
+    }
+
     // Check for [FR] tag
     const frMatch = cleaned.match(/^\[FR\]\s*(.*)/i);
     if (frMatch) {
@@ -516,6 +635,8 @@ export function normalizeStructuredReader(rawJson, langId = DEFAULT_LANG_ID) {
     translation:   q.translation || '',
     ...(q.options ? { options: q.options } : {}),
     ...(q.correctAnswer || q.correct_answer ? { correctAnswer: q.correctAnswer || q.correct_answer } : {}),
+    ...(q.pairs ? { pairs: q.pairs } : {}),
+    ...(q.bank ? { bank: q.bank } : {}),
   }));
 
   const grammarNotes = (data.grammar_notes || []).map(n => ({

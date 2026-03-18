@@ -518,19 +518,68 @@ export function gradeMultipleChoice(questions, userAnswers) {
   let totalScore = 0;
   let mcCount = 0;
   const feedback = questions.map((q, i) => {
-    if (q.type !== 'mc') return null;
-    mcCount++;
-    const userChoice = (userAnswers[i] || '').toUpperCase();
-    const correct = (q.correctAnswer || '').toUpperCase();
-    const isCorrect = userChoice === correct;
-    const score = isCorrect ? 5 : 1;
-    totalScore += score;
-    const correctOption = (q.options || []).find(o => o.startsWith(correct + '.')) || correct;
-    return {
-      score: `${score}/5`,
-      feedback: isCorrect ? '' : '',
-      suggestedAnswer: isCorrect ? null : correctOption,
-    };
+    if (q.type === 'mc') {
+      mcCount++;
+      const userChoice = (userAnswers[i] || '').toUpperCase();
+      const correct = (q.correctAnswer || '').toUpperCase();
+      const isCorrect = userChoice === correct;
+      const score = isCorrect ? 5 : 1;
+      totalScore += score;
+      const correctOption = (q.options || []).find(o => o.startsWith(correct + '.')) || correct;
+      return {
+        score: `${score}/5`,
+        feedback: isCorrect ? '' : '',
+        suggestedAnswer: isCorrect ? null : correctOption,
+      };
+    }
+    if (q.type === 'tf') {
+      mcCount++;
+      const userChoice = (userAnswers[i] || '').toUpperCase();
+      const correct = (q.correctAnswer || '').toUpperCase();
+      const isCorrect = userChoice === correct;
+      const score = isCorrect ? 5 : 1;
+      totalScore += score;
+      return {
+        score: `${score}/5`,
+        feedback: '',
+        suggestedAnswer: isCorrect ? null : correct,
+      };
+    }
+    if (q.type === 'fb') {
+      mcCount++;
+      const userChoice = (userAnswers[i] || '').trim();
+      const correct = (q.correctAnswer || '').trim();
+      const isCorrect = userChoice === correct;
+      const score = isCorrect ? 5 : 1;
+      totalScore += score;
+      return {
+        score: `${score}/5`,
+        feedback: '',
+        suggestedAnswer: isCorrect ? null : correct,
+      };
+    }
+    if (q.type === 'vm') {
+      mcCount++;
+      const userPairs = userAnswers[i]; // expected: { word: definition } map
+      const correctPairs = q.pairs || [];
+      if (!userPairs || typeof userPairs !== 'object') {
+        totalScore += 1;
+        return { score: '1/5', feedback: '', suggestedAnswer: null };
+      }
+      let correctCount = 0;
+      correctPairs.forEach(p => {
+        if (userPairs[p.word] === p.definition) correctCount++;
+      });
+      const total = correctPairs.length;
+      const score = total > 0 ? Math.max(1, Math.round((correctCount / total) * 5)) : 1;
+      totalScore += score;
+      return {
+        score: `${score}/5`,
+        feedback: '',
+        suggestedAnswer: correctCount < total ? correctPairs.map(p => `${p.word} = ${p.definition}`).join(', ') : null,
+      };
+    }
+    return null; // FR or unknown → null (backward compat)
   });
   return { feedback, totalScore, mcCount };
 }
@@ -587,10 +636,12 @@ export const READER_JSON_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          type:           { type: 'string', description: 'Question type: "mc" or "fr"' },
+          type:           { type: 'string', description: 'Question type: "mc", "tf", "fb", or "vm"' },
           text:           { type: 'string', description: 'Question in target language' },
           options:        { type: 'array', items: { type: 'string' }, description: 'A-D options for mc type' },
-          correct_answer: { type: 'string', description: 'Correct letter (A/B/C/D) for mc type' },
+          correct_answer: { type: 'string', description: 'Correct letter (A/B/C/D) for mc, T/F for tf, word for fb' },
+          bank:           { type: 'array', items: { type: 'string' }, description: 'Word bank for fb type (includes correct answer + distractors)' },
+          pairs:          { type: 'array', items: { type: 'object', properties: { word: { type: 'string' }, definition: { type: 'string' } } }, description: 'Word-definition pairs for vm type' },
         },
         required: ['type', 'text'],
       },

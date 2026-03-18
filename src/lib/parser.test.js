@@ -590,6 +590,240 @@ B. 睡觉
     expect(result.questions[0].text).toBe('猫喜欢什么？');
   });
 
+  it('parses [TF] block with answer', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[TF] 猫很可爱。
+Answer: T
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions.length).toBe(1);
+    expect(result.questions[0].type).toBe('tf');
+    expect(result.questions[0].text).toBe('猫很可爱。');
+    expect(result.questions[0].correctAnswer).toBe('T');
+  });
+
+  it('parses [TF] with answer F', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[TF] 猫不喜欢吃鱼。
+Answer: F
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions[0].type).toBe('tf');
+    expect(result.questions[0].correctAnswer).toBe('F');
+  });
+
+  it('malformed [TF] without answer falls back to FR', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[TF] 猫很可爱。
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions[0].type).toBe('fr');
+  });
+
+  it('parses [FB] block with answer and bank', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[FB] 小猫很喜欢在_____里玩。
+Answer: 公园
+Bank: 公园, 学校, 商店, 医院
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions.length).toBe(1);
+    expect(result.questions[0].type).toBe('fb');
+    expect(result.questions[0].correctAnswer).toBe('公园');
+    expect(result.questions[0].bank).toEqual(['公园', '学校', '商店', '医院']);
+  });
+
+  it('malformed [FB] without bank falls back to FR', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[FB] 小猫很喜欢在_____里玩。
+Answer: 公园
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions[0].type).toBe('fr');
+  });
+
+  it('parses [VM] block with word-definition pairs', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[VM] Match the words with their definitions.
+1. 猫 = cat
+2. 狗 = dog
+3. 鸟 = bird
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions.length).toBe(1);
+    expect(result.questions[0].type).toBe('vm');
+    expect(result.questions[0].pairs).toEqual([
+      { word: '猫', definition: 'cat' },
+      { word: '狗', definition: 'dog' },
+      { word: '鸟', definition: 'bird' },
+    ]);
+  });
+
+  it('malformed [VM] with < 2 pairs falls back to FR', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[VM] Match the words.
+1. 猫 = cat
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions[0].type).toBe('fr');
+  });
+
+  it('parses mixed MC + TF + FB + VM in same section', () => {
+    const md = `### 1. Title
+测试
+Test
+
+### 2. Story
+**猫**很可爱。
+
+### 3. Vocabulary List
+
+### 4. Comprehension Questions
+[MC] 猫在哪里？
+A. 公园
+B. 家里
+C. 学校
+D. 商店
+Answer: A
+
+[TF] 猫很可爱。
+Answer: T
+
+[FB] 小猫在_____里玩。
+Answer: 公园
+Bank: 公园, 学校, 商店, 医院
+
+[VM] Match the words.
+1. 猫 = cat
+2. 狗 = dog
+
+### 5. Anki Cards Data (JSON)
+\`\`\`anki-json
+[]
+\`\`\`
+
+### 6. Grammar Notes
+`;
+    const result = parseReaderResponse(md, 'zh');
+    expect(result.questions.length).toBe(4);
+    expect(result.questions[0].type).toBe('mc');
+    expect(result.questions[1].type).toBe('tf');
+    expect(result.questions[2].type).toBe('fb');
+    expect(result.questions[3].type).toBe('vm');
+  });
+
   it('legacy format (no tags) produces FR questions with type field', () => {
     const md = `### 1. Title
 测试

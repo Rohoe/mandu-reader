@@ -469,6 +469,75 @@ describe('gradeMultipleChoice', () => {
     expect(result.totalScore).toBe(6); // 5 + 1
     expect(result.feedback[1]).toBeNull();
   });
+
+  // ── True/False grading ──────────────────────────────────────
+
+  it('correct TF answer → score 5/5', () => {
+    const questions = [{ type: 'tf', text: 'Statement', correctAnswer: 'T' }];
+    const result = gradeMultipleChoice(questions, { 0: 'T' });
+    expect(result.feedback[0].score).toBe('5/5');
+    expect(result.mcCount).toBe(1);
+    expect(result.totalScore).toBe(5);
+  });
+
+  it('incorrect TF answer → score 1/5', () => {
+    const questions = [{ type: 'tf', text: 'Statement', correctAnswer: 'T' }];
+    const result = gradeMultipleChoice(questions, { 0: 'F' });
+    expect(result.feedback[0].score).toBe('1/5');
+    expect(result.feedback[0].suggestedAnswer).toBe('T');
+    expect(result.totalScore).toBe(1);
+  });
+
+  // ── Fill-in-the-blank grading ───────────────────────────────
+
+  it('correct FB answer → score 5/5', () => {
+    const questions = [{ type: 'fb', text: 'Sentence with _____.', correctAnswer: '公园', bank: ['公园', '学校', '商店', '医院'] }];
+    const result = gradeMultipleChoice(questions, { 0: '公园' });
+    expect(result.feedback[0].score).toBe('5/5');
+    expect(result.mcCount).toBe(1);
+    expect(result.totalScore).toBe(5);
+  });
+
+  it('incorrect FB answer → score 1/5', () => {
+    const questions = [{ type: 'fb', text: 'Sentence with _____.', correctAnswer: '公园', bank: ['公园', '学校', '商店', '医院'] }];
+    const result = gradeMultipleChoice(questions, { 0: '学校' });
+    expect(result.feedback[0].score).toBe('1/5');
+    expect(result.feedback[0].suggestedAnswer).toBe('公园');
+  });
+
+  // ── Vocabulary matching grading ─────────────────────────────
+
+  it('all VM pairs correct → score 5/5', () => {
+    const questions = [{ type: 'vm', text: 'Match.', pairs: [{ word: '猫', definition: 'cat' }, { word: '狗', definition: 'dog' }] }];
+    const result = gradeMultipleChoice(questions, { 0: { '猫': 'cat', '狗': 'dog' } });
+    expect(result.feedback[0].score).toBe('5/5');
+    expect(result.mcCount).toBe(1);
+    expect(result.totalScore).toBe(5);
+  });
+
+  it('half VM pairs correct → proportional score', () => {
+    const questions = [{ type: 'vm', text: 'Match.', pairs: [
+      { word: '猫', definition: 'cat' },
+      { word: '狗', definition: 'dog' },
+      { word: '鸟', definition: 'bird' },
+      { word: '鱼', definition: 'fish' },
+    ] }];
+    const result = gradeMultipleChoice(questions, { 0: { '猫': 'cat', '狗': 'bird', '鸟': 'dog', '鱼': 'fish' } });
+    // 2/4 correct = round(2.5) = 3
+    expect(result.feedback[0].score).toBe('3/5');
+  });
+
+  it('no VM answer → score 1/5', () => {
+    const questions = [{ type: 'vm', text: 'Match.', pairs: [{ word: '猫', definition: 'cat' }] }];
+    const result = gradeMultipleChoice(questions, { 0: null });
+    expect(result.feedback[0].score).toBe('1/5');
+  });
+
+  it('VM all wrong → score 1/5 (minimum)', () => {
+    const questions = [{ type: 'vm', text: 'Match.', pairs: [{ word: '猫', definition: 'cat' }, { word: '狗', definition: 'dog' }] }];
+    const result = gradeMultipleChoice(questions, { 0: { '猫': 'dog', '狗': 'cat' } });
+    expect(result.feedback[0].score).toBe('1/5');
+  });
 });
 
 // ── callLLM / fetchWithRetry (via generateSyllabus) ──────────

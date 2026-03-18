@@ -3,6 +3,7 @@ import { useAppSelector, useAppDispatch } from '../context/useAppSelector';
 import { actions } from '../context/actions';
 import { gradeAnswers, gradeMultipleChoice } from '../lib/api';
 import { buildGradingLLMConfig, hasAnyUserKey } from '../lib/llmConfig';
+import VocabMatchingQuestion from './VocabMatchingQuestion';
 import { buildGradingContext } from '../lib/stats';
 import { translateText } from '../lib/translate';
 import { renderInline, stripMarkdown } from '../lib/renderInline';
@@ -89,14 +90,15 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
     return () => flushSave();
   }, [flushSave]);
 
-  // Auto-grade when all MC questions are checked and no FR questions exist
-  const mcOnlyAllChecked = questions && questions.length > 0
-    && questions.every((q) => (q.type || 'fr') === 'mc')
+  const DETERMINISTIC_TYPES = new Set(['mc', 'tf', 'fb', 'vm']);
+  // Auto-grade when all deterministic questions are checked and no FR questions exist
+  const deterministicAllChecked = questions && questions.length > 0
+    && questions.every((q) => DETERMINISTIC_TYPES.has(q.type || 'fr'))
     && questions.every((q, i) => mcChecked[i])
     && !results;
   useEffect(() => {
-    if (mcOnlyAllChecked) handleGrade();
-  }, [mcOnlyAllChecked]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (deterministicAllChecked) handleGrade();
+  }, [deterministicAllChecked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!questions || questions.length === 0) {
     return (
@@ -110,11 +112,13 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
   }
 
   const hasAnyAnswer = questions.some((q, i) => {
-    if ((q.type || 'fr') === 'mc') return !!(answers[i] || '').trim();
+    const qType = q.type || 'fr';
+    if (qType === 'vm') return answers[i] && typeof answers[i] === 'object' && Object.keys(answers[i]).length > 0;
+    if (DETERMINISTIC_TYPES.has(qType)) return !!(answers[i] || '').toString().trim();
     return (answers[i] || '').trim().length > 0;
   });
   const hasFrQuestions = questions.some(q => (q.type || 'fr') === 'fr');
-  const allMcChecked = questions.every((q, i) => (q.type || 'fr') !== 'mc' || mcChecked[i]);
+  const allDeterministicChecked = questions.every((q, i) => !DETERMINISTIC_TYPES.has(q.type || 'fr') || mcChecked[i]);
   const hasFrAnswers = questions.some((q, i) => (q.type || 'fr') === 'fr' && (answers[i] || '').trim().length > 0);
 
   function handleAnswerChange(i, val) {
@@ -279,6 +283,10 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
               const qTranslation = typeof q === 'object' ? q.translation : '';
               const qType = (typeof q === 'object' ? q.type : null) || 'fr';
               const isMc = qType === 'mc';
+              const isTf = qType === 'tf';
+              const isFb = qType === 'fb';
+              const isVm = qType === 'vm';
+              const isDeterministic = DETERMINISTIC_TYPES.has(qType);
               return (
               <li key={i} className="comprehension__item">
                 <span className="comprehension__num">{i + 1}.</span>
@@ -357,6 +365,96 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
                           </p>
                         )}
                       </div>
+                    ) : isTf ? (
+                      <div className="comprehension__tf-options">
+                        {['T', 'F'].map(val => {
+                          const isSelected = answers[i] === val;
+                          const isChecked = mcChecked[i];
+                          const isCorrectAnswer = val === q.correctAnswer;
+                          let optClass = 'comprehension__tf-option';
+                          if (isSelected) optClass += ' comprehension__tf-option--selected';
+                          if (isChecked && isSelected && isCorrectAnswer) optClass += ' comprehension__tf-option--correct';
+                          if (isChecked && isSelected && !isCorrectAnswer) optClass += ' comprehension__tf-option--incorrect';
+                          if (isChecked && !isSelected && isCorrectAnswer) optClass += ' comprehension__tf-option--correct';
+                          if (isChecked) optClass += ' comprehension__tf-option--disabled';
+                          return (
+                            <button
+                              key={val}
+                              className={optClass}
+                              onClick={() => !isChecked && handleAnswerChange(i, val)}
+                              disabled={isChecked || grading}
+                            >
+                              {val === 'T' ? t('comprehension.true') : t('comprehension.false')}
+                            </button>
+                          );
+                        })}
+                        {!mcChecked[i] && answers[i] && (
+                          <button
+                            className="btn btn-primary btn-xs comprehension__mc-check"
+                            onClick={() => handleCheckMc(i)}
+                          >
+                            {t('comprehension.checkAnswer')}
+                          </button>
+                        )}
+                        {mcChecked[i] && (
+                          <p className={`comprehension__mc-feedback ${answers[i] === q.correctAnswer ? 'comprehension__mc-feedback--correct' : 'comprehension__mc-feedback--incorrect'}`}>
+                            {answers[i] === q.correctAnswer
+                              ? t('comprehension.correct')
+                              : t('comprehension.incorrectTF', { answer: q.correctAnswer === 'T' ? t('comprehension.true') : t('comprehension.false') })}
+                          </p>
+                        )}
+                      </div>
+                    ) : isFb ? (
+                      <div className="comprehension__fb">
+                        <div className="comprehension__fb-bank">
+                          {(q.bank || []).map(word => {
+                            const isSelected = answers[i] === word;
+                            const isChecked = mcChecked[i];
+                            const isCorrectAnswer = word === q.correctAnswer;
+                            let chipClass = 'comprehension__fb-chip';
+                            if (isSelected) chipClass += ' comprehension__fb-chip--selected';
+                            if (isChecked && isSelected && isCorrectAnswer) chipClass += ' comprehension__fb-chip--correct';
+                            if (isChecked && isSelected && !isCorrectAnswer) chipClass += ' comprehension__fb-chip--incorrect';
+                            if (isChecked && !isSelected && isCorrectAnswer) chipClass += ' comprehension__fb-chip--correct';
+                            if (isChecked) chipClass += ' comprehension__fb-chip--disabled';
+                            return (
+                              <button
+                                key={word}
+                                className={chipClass}
+                                onClick={() => !isChecked && handleAnswerChange(i, word)}
+                                disabled={isChecked || grading}
+                              >
+                                {word}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {!mcChecked[i] && answers[i] && (
+                          <button
+                            className="btn btn-primary btn-xs comprehension__mc-check"
+                            onClick={() => handleCheckMc(i)}
+                          >
+                            {t('comprehension.checkAnswer')}
+                          </button>
+                        )}
+                        {mcChecked[i] && (
+                          <p className={`comprehension__mc-feedback ${answers[i] === q.correctAnswer ? 'comprehension__mc-feedback--correct' : 'comprehension__mc-feedback--incorrect'}`}>
+                            {answers[i] === q.correctAnswer
+                              ? t('comprehension.correct')
+                              : t('comprehension.incorrectFB', { answer: q.correctAnswer })}
+                          </p>
+                        )}
+                      </div>
+                    ) : isVm ? (
+                      <VocabMatchingQuestion
+                        question={q}
+                        answer={answers[i]}
+                        onAnswerChange={(val) => handleAnswerChange(i, val)}
+                        checked={mcChecked[i]}
+                        onCheck={() => handleCheckMc(i)}
+                        results={mcChecked[i] ? gradeMultipleChoice([q], { 0: answers[i] }).feedback[0] : null}
+                        t={t}
+                      />
                     ) : (
                       <textarea
                         className="comprehension__answer"
@@ -370,8 +468,10 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
                     <div className="comprehension__result">
                       {answers[i] && (
                         <p className="comprehension__user-answer">
-                          {isMc
+                          {isMc || isTf
                             ? t('comprehension.yourChoice', { choice: answers[i] })
+                            : isVm
+                            ? t('comprehension.matchesResult', { count: (q.pairs || []).filter(p => answers[i]?.[p.word] === p.definition).length, total: (q.pairs || []).length })
                             : t('comprehension.yourAnswer', { answer: answers[i] })}
                         </p>
                       )}
@@ -430,7 +530,7 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
                   onClick={handleGrade}
                   disabled={!hasAnyAnswer || grading || (hasFrQuestions && !canGrade)}
                 >
-                  {grading ? t('comprehension.grading') : t('comprehension.gradeMyAnswers')}
+                  {grading ? t('comprehension.grading') : (hasFrQuestions ? t('comprehension.gradeMyAnswers') : t('comprehension.checkAnswers'))}
                 </button>
                 {!grading && canGrade && !hasAnyAnswer && (
                   <p className="comprehension__hint text-muted" style={{ fontSize: 'var(--text-sm)', marginTop: 'var(--space-2)' }}>

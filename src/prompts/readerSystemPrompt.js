@@ -8,7 +8,7 @@ export function buildReaderSystem(langConfig, level, topic, charRange, targetCha
     : targetChars <= 1000 ? '10-14'
     : targetChars <= 1500 ? '14-18'
     : '16-22';
-  const questionRange = targetChars <= 250 ? '2-3' : '3-5';
+  const questionRange = targetChars <= 250 ? '3-4' : '5-6';
   const grammarRange = targetChars <= 250 ? '1-2' : '3-5';
   const minAppearances = 1;
 
@@ -54,7 +54,8 @@ IMPORTANT: Do NOT prefix example sentences with labels like "Example sentence:" 
 
 ### 4. Comprehension Questions
 ${questionRange} questions in ${p.targetLanguage} at the target level.
-Mix of multiple-choice and free-response questions.
+Default mix: ~2 multiple-choice, 1 true/false, 1 fill-in-the-blank, 1 vocabulary matching.
+All questions are auto-graded — do NOT use free-response.
 
 For multiple-choice questions, use EXACTLY this format:
 [MC] Question text?
@@ -64,10 +65,20 @@ C. Third option
 D. Fourth option
 Answer: B
 
-For free-response questions, use EXACTLY this format:
-[FR] Question text?
+For true/false questions, use EXACTLY this format:
+[TF] Statement about the story.
+Answer: T
 
-Use multiple-choice for factual recall. Use free-response for inference or expression.
+For fill-in-the-blank questions (use a vocabulary word from the story), use EXACTLY this format:
+[FB] Sentence with _____ in it.
+Answer: word
+Bank: word, distractor1, distractor2, distractor3
+
+For vocabulary matching questions (use 3-5 vocabulary words from the story), use EXACTLY this format:
+[VM] Match the words with their definitions.
+1. word1 = definition1
+2. word2 = definition2
+3. word3 = definition3
 
 ### 5. Anki Cards Data (JSON)
 Return a JSON block tagged \`\`\`anki-json containing an array of card objects:

@@ -38,7 +38,12 @@
 - `parseVocabularySection` handles numbered vocab lines (e.g. `1. 词语 ...`) in addition to bullet/dash formats.
 - Fallback: raw text with "Regenerate" button
 - `parseStorySegments()` → `{ type: 'text'|'bold'|'italic', content }[]`
-- `parseQuestions()` → `{ text, translation }[]` (extracts trailing parenthesized translations)
+- `parseQuestions()` → array of question objects with `{ type, text, translation }` plus type-specific fields:
+  - `mc`: `{ options, correctAnswer }` — multiple-choice (A/B/C/D)
+  - `tf`: `{ correctAnswer }` — true/false (T/F)
+  - `fb`: `{ correctAnswer, bank }` — fill-in-the-blank with word bank
+  - `vm`: `{ pairs: [{ word, definition }] }` — vocabulary matching
+  - `fr`: (no extra fields) — free-response (legacy, kept for backward compat)
 - `parseVocabularySection`: Pattern A = `(pinyin)` or `[pinyin]`; Pattern B = no-bracket (backfill from ankiJson). Missing vocab words auto-appended from ankiJson.
 - Vocab items: canonical fields (target/romanization/translation) + legacy aliases (chinese/pinyin/english)
 
