@@ -380,8 +380,9 @@ function AppShell() {
                   // Generate a standalone reader for this activity
                   const readerKey = `plan_${planId}_${activity.id}`;
                   const existingReader = state.generatedReaders[readerKey];
-                  if (!existingReader) {
-                    // Create standalone reader metadata
+                  const existingMeta = state.standaloneReaders.some(r => r.key === readerKey);
+                  if (!existingMeta) {
+                    // Create standalone reader metadata (only if not already in sidebar)
                     const config = activity.config || {};
                     act.addStandaloneReader({
                       key: readerKey,
@@ -415,9 +416,9 @@ function AppShell() {
                     }
                   }
                   if (!tutorReaderKey) {
-                    // No completed reader — create a minimal standalone entry for the tutor
+                    // No completed reader — use the tutor activity's own key
                     tutorReaderKey = `plan_${planId}_${activity.id}`;
-                    if (!state.standaloneReaders.some(r => r.key === tutorReaderKey)) {
+                    if (!state.standaloneReaders.some(r => r.key === tutorReaderKey) && !state.generatedReaders[tutorReaderKey]) {
                       act.addStandaloneReader({
                         key: tutorReaderKey,
                         topic: activity.title || 'Conversation practice',

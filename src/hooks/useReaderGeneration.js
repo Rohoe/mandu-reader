@@ -117,7 +117,7 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
       }
       pushGeneratedReader(lessonKey, { ...parsed, topic, level, langId: readerLangId, lessonKey });
       // Update sidebar metadata with generated titles so they persist across reloads
-      if ((parsed.titleZh || parsed.titleEn) && lessonKey.startsWith('standalone_')) {
+      if ((parsed.titleZh || parsed.titleEn) && (lessonKey.startsWith('standalone_') || lessonKey.startsWith('plan_'))) {
         act.updateStandaloneReaderMeta({ key: lessonKey, titleZh: parsed.titleZh, titleEn: parsed.titleEn });
       }
       act.notify('success', `Reader ready: ${lessonMeta?.title_en || topic}`);

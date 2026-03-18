@@ -55,6 +55,22 @@ export default function PlanOnboarding({ onComplete, onCancel }) {
         bestLevel = level.value;
       }
     }
+
+    // Also consider levels from existing syllabi and readers for this language
+    let maxContentLevel = bestLevel;
+    for (const s of state.syllabi || []) {
+      if ((s.langId || 'zh') === langId && s.level != null && s.level > maxContentLevel) {
+        maxContentLevel = s.level;
+      }
+    }
+    for (const [, r] of Object.entries(state.generatedReaders || {})) {
+      if ((r.langId || 'zh') === langId && r.level != null && r.level > maxContentLevel) {
+        maxContentLevel = r.level;
+      }
+    }
+    // Use the higher of vocab-derived level and content-derived level
+    bestLevel = Math.max(bestLevel, maxContentLevel);
+
     setAssessedLevel(bestLevel);
     setAssessmentMode('auto');
     goNext();
@@ -94,12 +110,13 @@ export default function PlanOnboarding({ onComplete, onCancel }) {
 
   function handleConfirm() {
     const planId = `plan_${Date.now()}`;
+    const fallbackLevel = state.defaultLevels?.[langId] ?? levels[0].value;
     const plan = {
       id: planId,
       langId,
       nativeLang: state.nativeLang,
-      assessedLevel: assessedLevel ?? levels[0].value,
-      currentLevel: assessedLevel ?? levels[0].value,
+      assessedLevel: assessedLevel ?? fallbackLevel,
+      currentLevel: assessedLevel ?? fallbackLevel,
       goals,
       dailyMinutes,
       createdAt: Date.now(),

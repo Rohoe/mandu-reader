@@ -54,7 +54,12 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
   const act = actions(dispatch);
   const isPending = !!(lessonKey && pendingReaders[lessonKey]);
 
+  const { standaloneReaders } = useAppSelector(s => ({ standaloneReaders: s.standaloneReaders }));
   const reader = generatedReaders[lessonKey];
+  // For plan activities: reader metadata lives in standaloneReaders, not generatedReaders
+  const standaloneMeta = (!reader && !lessonMeta && lessonKey)
+    ? standaloneReaders.find(r => r.key === lessonKey)
+    : null;
   const isDemo = DEMO_READER_KEYS.has(lessonKey);
   const scrollRef = useRef(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
@@ -167,7 +172,7 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
 
   const llmConfig = buildLLMConfig({ providerKeys, activeProvider, activeModels, customBaseUrl });
   const { handleGenerate, streamingText } = useReaderGeneration({
-    lessonKey, lessonMeta, reader, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput, nativeLang,
+    lessonKey, lessonMeta, reader: reader || standaloneMeta, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput, nativeLang,
     syllabus, generatedReaders, learningActivity,
   });
 
