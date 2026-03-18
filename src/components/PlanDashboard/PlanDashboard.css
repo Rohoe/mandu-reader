@@ -228,6 +228,20 @@
   border-left: 3px solid var(--color-accent);
 }
 
+.activity-card--locked {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.activity-card--locked:hover {
+  border-color: var(--color-border);
+  transform: none;
+}
+
+.activity-card__locked-hint {
+  font-style: italic;
+}
+
 .activity-card__icon {
   font-size: var(--text-lg);
   flex-shrink: 0;

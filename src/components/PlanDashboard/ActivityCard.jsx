@@ -16,28 +16,29 @@ const TYPE_LABELS = {
   review: 'plan.activity.review',
 };
 
-export default function ActivityCard({ activity, onClick, onSkip, onUndo }) {
+export default function ActivityCard({ activity, locked, onClick, onSkip, onUndo }) {
   const t = useT();
   const { type, title, description, estimatedMinutes, status } = activity;
   const isCompleted = status === 'completed';
   const isSkipped = status === 'skipped';
   const isInProgress = status === 'in_progress';
+  const isClickable = !isCompleted && !isSkipped && !locked;
 
   return (
     <div
-      className={`activity-card ${isCompleted ? 'activity-card--completed' : ''} ${isSkipped ? 'activity-card--skipped' : ''} ${isInProgress ? 'activity-card--in-progress' : ''}`}
-      onClick={!isCompleted && !isSkipped ? onClick : undefined}
-      role={!isCompleted && !isSkipped ? 'button' : undefined}
-      tabIndex={!isCompleted && !isSkipped ? 0 : undefined}
+      className={`activity-card ${isCompleted ? 'activity-card--completed' : ''} ${isSkipped ? 'activity-card--skipped' : ''} ${isInProgress ? 'activity-card--in-progress' : ''} ${locked ? 'activity-card--locked' : ''}`}
+      onClick={isClickable ? onClick : undefined}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
       onKeyDown={e => {
-        if ((e.key === 'Enter' || e.key === ' ') && !isCompleted && !isSkipped) {
+        if ((e.key === 'Enter' || e.key === ' ') && isClickable) {
           e.preventDefault();
           onClick?.();
         }
       }}
     >
       <div className="activity-card__icon">
-        {isCompleted ? '✓' : TYPE_ICONS[type] || '•'}
+        {isCompleted ? '✓' : locked ? '🔒' : TYPE_ICONS[type] || '•'}
       </div>
       <div className="activity-card__content">
         <div className="activity-card__header">
@@ -45,7 +46,9 @@ export default function ActivityCard({ activity, onClick, onSkip, onUndo }) {
           <span className="activity-card__time">{estimatedMinutes} min</span>
         </div>
         <span className="activity-card__title">{title}</span>
-        {description && <span className="activity-card__desc">{description}</span>}
+        {locked
+          ? <span className="activity-card__desc activity-card__locked-hint">{t('plan.dashboard.completeReadingFirst')}</span>
+          : description && <span className="activity-card__desc">{description}</span>}
       </div>
       {isCompleted && (
         <button
@@ -57,7 +60,7 @@ export default function ActivityCard({ activity, onClick, onSkip, onUndo }) {
           ↩
         </button>
       )}
-      {!isCompleted && !isSkipped && (
+      {!isCompleted && !isSkipped && !locked && (
         <button
           className="activity-card__skip"
           onClick={e => { e.stopPropagation(); onSkip?.(); }}

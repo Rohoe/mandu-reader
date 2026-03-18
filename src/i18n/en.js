@@ -569,6 +569,7 @@ export default {
   'plan.dashboard.skip': 'Skip',
   'plan.dashboard.deletePlan': 'Delete Plan',
   'plan.dashboard.confirmDelete': 'Permanently delete "{name}" and all its progress?',
+  'plan.dashboard.completeReadingFirst': 'Complete a reading first',
 
   // ── Learning Plan — Activities ─────────────────────────────────
   'plan.activity.reading': 'Reading',

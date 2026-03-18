@@ -496,6 +496,7 @@ export default {
   'plan.dashboard.skip': '跳過',
   'plan.dashboard.deletePlan': '刪除計劃',
   'plan.dashboard.confirmDelete': '永久刪除「{name}」同所有進度？',
+  'plan.dashboard.completeReadingFirst': '請先完成一篇閱讀',
 
   // ── Learning Plan — Activities
   'plan.activity.reading': '閱讀',

@@ -497,6 +497,7 @@ export default {
   'plan.dashboard.skip': 'Passer',
   'plan.dashboard.deletePlan': 'Supprimer le plan',
   'plan.dashboard.confirmDelete': 'Supprimer d\u00e9finitivement \u00ab {name} \u00bb et toute sa progression ?',
+  'plan.dashboard.completeReadingFirst': 'Terminez d\u2019abord une lecture',
 
   // ── Learning Plan — Activities
   'plan.activity.reading': 'Lecture',
