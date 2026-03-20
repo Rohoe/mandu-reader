@@ -26,6 +26,7 @@ export function useReadingTimer(lessonKey) {
       const seconds = Math.round(accumulatedRef.current);
       if (seconds > 0) {
         act.updateReadingTime(lessonKey, seconds);
+        act.logReadingSession(lessonKey, seconds);
       }
       accumulatedRef.current = 0;
     }

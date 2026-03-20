@@ -2,6 +2,7 @@ import { normalizeSyllabi, normalizeStandaloneReaders } from '../../lib/vocabNor
 import {
   RESTORE_FROM_BACKUP, CLEAR_ALL_DATA, FS_INITIALIZED, SET_SAVE_FOLDER,
   HYDRATE_FROM_FILES, SET_LEARNING_ACTIVITY, LOG_ACTIVITY, UPDATE_READING_TIME,
+  LOG_READING_SESSION,
 } from '../actionTypes';
 
 export function dataReducer(state, action, buildInitialState) {
@@ -89,6 +90,14 @@ export function dataReducer(state, action, buildInitialState) {
           [lessonKey]: (state.readingTime[lessonKey] || 0) + seconds,
         },
       };
+    }
+
+    case LOG_READING_SESSION: {
+      const entry = { timestamp: Date.now(), seconds: action.payload.seconds, lessonKey: action.payload.lessonKey };
+      const log = [...(state.readingTimeLog || []), entry];
+      // Cap at 90 days
+      const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+      return { ...state, readingTimeLog: log.filter(e => e.timestamp >= cutoff) };
     }
 
     default:

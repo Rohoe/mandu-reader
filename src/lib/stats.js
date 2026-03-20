@@ -640,6 +640,39 @@ export function getLevelUpRecommendation(learnedVocabulary, learningActivity, ge
 }
 
 /**
+ * Computes current-week progress from learningActivity and readingTimeLog.
+ * Week starts Monday 00:00 local time.
+ */
+export function computeWeeklyProgress(learningActivity, readingTimeLog) {
+  const mondayMs = getCurrentMondayMs();
+  const activity = (learningActivity || []).filter(a => (a.timestamp || 0) >= mondayMs);
+
+  return {
+    lessonsCompleted: activity.filter(a => a.type === 'lesson_completed').length,
+    flashcardReviews: activity.filter(a => a.type === 'flashcard_reviewed').length,
+    quizzesCompleted: activity.filter(a => a.type === 'quiz_graded').length,
+    minutesStudied: Math.round(
+      (readingTimeLog || [])
+        .filter(e => (e.timestamp || 0) >= mondayMs)
+        .reduce((sum, e) => sum + (e.seconds || 0), 0) / 60
+    ),
+  };
+}
+
+/**
+ * Returns timestamp of Monday 00:00 of the current week (local time).
+ */
+function getCurrentMondayMs() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon...
+  const diff = day === 0 ? 6 : day - 1; // days since Monday
+  const monday = new Date(now);
+  monday.setDate(monday.getDate() - diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday.getTime();
+}
+
+/**
  * Count readable units in a text string.
  * For CJK languages (zh, yue): count characters (excluding spaces/punctuation).
  * For alphabetic languages (ko, en): count words.
