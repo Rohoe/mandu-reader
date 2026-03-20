@@ -6,7 +6,7 @@ import { useT } from '../../i18n';
  * Shows the target word, user types the translation.
  * Tests meaning recall (reverse direction → updates reverse SRS fields).
  */
-export default function ReverseListeningMode({ cards, onJudge, onClose }) {
+export default function ReverseListeningMode({ cards, onJudge, onClose, singleCard, onComplete }) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
@@ -14,13 +14,15 @@ export default function ReverseListeningMode({ cards, onJudge, onClose }) {
   const [judgment, setJudgment] = useState(null);
   const [results, setResults] = useState({ correct: 0, almost: 0, incorrect: 0 });
   const inputRef = useRef(null);
+  const lastJudgmentRef = useRef(null);
 
   const eligibleCards = useMemo(() => {
+    if (singleCard) return singleCard.translation ? [singleCard] : [];
     return cards.filter(c => c.translation);
-  }, [cards]);
+  }, [cards, singleCard]);
 
   const card = eligibleCards[index] || null;
-  const done = index >= eligibleCards.length;
+  const done = !singleCard && index >= eligibleCards.length;
 
   useEffect(() => {
     if (!revealed && inputRef.current) inputRef.current.focus();
@@ -49,15 +51,20 @@ export default function ReverseListeningMode({ cards, onJudge, onClose }) {
       almost: prev.almost + (j === 'almost' ? 1 : 0),
       incorrect: prev.incorrect + (j === 'missed' ? 1 : 0),
     }));
+    lastJudgmentRef.current = j;
     onJudge(card.target, j, 'reverse');
   }, [input, card, revealed, onJudge]);
 
   const handleNext = useCallback(() => {
+    if (singleCard && onComplete) {
+      onComplete(lastJudgmentRef.current);
+      return;
+    }
     setIndex(i => i + 1);
     setInput('');
     setRevealed(false);
     setJudgment(null);
-  }, []);
+  }, [singleCard, onComplete]);
 
   useEffect(() => {
     function handleKeyDown(e) {

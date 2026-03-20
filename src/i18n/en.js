@@ -456,6 +456,12 @@ export default {
   'flashcard.typeTheTranslation': 'Type the translation…',
   'flashcard.whatDoesThisMean': 'What does this mean?',
   'flashcard.closeMatch': 'Close!',
+  'flashcard.srsReview': 'SRS Review',
+  'flashcard.srsReviewDesc': 'Classic flip cards with spaced repetition',
+  'flashcard.quizMix': 'Quiz Mix',
+  'flashcard.quizMixDesc': 'Fill blank, listening, multiple choice & more',
+  'flashcard.practiceSpecific': 'Practice specific exercise',
+  'flashcard.backToModes': 'Modes',
 
   // ── PWA ───────────────────────────────────────────────────────
   'pwa.offline': 'You are offline — reading and flashcards still work.',

@@ -6,16 +6,25 @@ import { useT } from '../../i18n';
  * Shows an example sentence with the target word blanked out.
  * User types the answer, gets immediate feedback.
  */
-export default function FillBlankMode({ cards, onJudge, onClose }) {
+export default function FillBlankMode({ cards, onJudge, onClose, singleCard, onComplete }) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
   const [revealed, setRevealed] = useState(false);
   const [results, setResults] = useState({ correct: 0, incorrect: 0 });
   const inputRef = useRef(null);
+  const lastJudgmentRef = useRef(null);
 
   // Filter to cards that have example sentences containing the target word
   const eligibleCards = useMemo(() => {
+    if (singleCard) {
+      const c = singleCard;
+      if (c.exampleSentence?.includes(c.target))
+        return [{ ...c, fillSentence: c.exampleSentence }];
+      if (c.exampleExtra?.includes(c.target))
+        return [{ ...c, fillSentence: c.exampleExtra }];
+      return [];
+    }
     return cards.map(c => {
       if (c.exampleSentence?.includes(c.target))
         return { ...c, fillSentence: c.exampleSentence };
@@ -23,10 +32,10 @@ export default function FillBlankMode({ cards, onJudge, onClose }) {
         return { ...c, fillSentence: c.exampleExtra };
       return null;
     }).filter(Boolean);
-  }, [cards]);
+  }, [cards, singleCard]);
 
   const card = eligibleCards[index] || null;
-  const done = index >= eligibleCards.length;
+  const done = !singleCard && index >= eligibleCards.length;
 
   // Build blanked sentence
   const blankedSentence = useMemo(() => {
@@ -51,14 +60,19 @@ export default function FillBlankMode({ cards, onJudge, onClose }) {
       correct: prev.correct + (isCorrect ? 1 : 0),
       incorrect: prev.incorrect + (isCorrect ? 0 : 1),
     }));
+    lastJudgmentRef.current = judgment;
     onJudge(card.target, judgment, 'forward');
   }, [input, card, revealed, onJudge]);
 
   const handleNext = useCallback(() => {
+    if (singleCard && onComplete) {
+      onComplete(lastJudgmentRef.current);
+      return;
+    }
     setIndex(i => i + 1);
     setInput('');
     setRevealed(false);
-  }, []);
+  }, [singleCard, onComplete]);
 
   useEffect(() => {
     function handleKeyDown(e) {

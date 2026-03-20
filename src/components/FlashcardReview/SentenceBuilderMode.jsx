@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useT } from '../../i18n';
 import { splitSentence } from './sentenceSplitter';
 
@@ -7,16 +7,26 @@ import { splitSentence } from './sentenceSplitter';
  * Shows translation as prompt, scrambled tiles from the target sentence.
  * User taps tiles to reconstruct the original sentence order.
  */
-export default function SentenceBuilderMode({ cards, onJudge, onClose, langId }) {
+export default function SentenceBuilderMode({ cards, onJudge, onClose, langId, singleCard, onComplete }) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [placed, setPlaced] = useState([]);
   const [revealed, setRevealed] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [results, setResults] = useState({ correct: 0, incorrect: 0 });
+  const lastJudgmentRef = useRef(null);
 
   // Cards where exampleSentence splits into ≥3 tiles
   const eligibleCards = useMemo(() => {
+    if (singleCard) {
+      const c = singleCard;
+      const sentence = c.exampleSentence || '';
+      const translation = c.exampleSentenceTranslation || '';
+      if (!sentence || !translation) return [];
+      const tiles = splitSentence(sentence, langId);
+      if (tiles.length < 3) return [];
+      return [{ ...c, tiles, sentenceTranslation: translation }];
+    }
     return cards.map(c => {
       const sentence = c.exampleSentence || '';
       const translation = c.exampleSentenceTranslation || '';
@@ -25,10 +35,10 @@ export default function SentenceBuilderMode({ cards, onJudge, onClose, langId })
       if (tiles.length < 3) return null;
       return { ...c, tiles, sentenceTranslation: translation };
     }).filter(Boolean);
-  }, [cards, langId]);
+  }, [cards, langId, singleCard]);
 
   const card = eligibleCards[index] || null;
-  const done = index >= eligibleCards.length;
+  const done = !singleCard && index >= eligibleCards.length;
 
   // Scramble the tiles (stable per card)
   const scrambled = useMemo(() => {
@@ -70,15 +80,20 @@ export default function SentenceBuilderMode({ cards, onJudge, onClose, langId })
       correct: prev.correct + (correct ? 1 : 0),
       incorrect: prev.incorrect + (correct ? 0 : 1),
     }));
+    lastJudgmentRef.current = judgment;
     onJudge(card.target, judgment, 'forward');
   }, [card, placed, revealed, onJudge]);
 
   const handleNext = useCallback(() => {
+    if (singleCard && onComplete) {
+      onComplete(lastJudgmentRef.current);
+      return;
+    }
     setIndex(i => i + 1);
     setPlaced([]);
     setRevealed(false);
     setIsCorrect(false);
-  }, []);
+  }, [singleCard, onComplete]);
 
   useEffect(() => {
     function handleKeyDown(e) {

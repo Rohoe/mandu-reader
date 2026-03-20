@@ -5,7 +5,7 @@ import { useT } from '../../i18n';
  * Listening quiz mode.
  * Plays the target word via TTS, user types what they hear.
  */
-export default function ListeningMode({ cards, onJudge, onClose, speakText }) {
+export default function ListeningMode({ cards, onJudge, onClose, speakText, singleCard, onComplete }) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
@@ -13,9 +13,11 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText }) {
   const [results, setResults] = useState({ correct: 0, incorrect: 0 });
   const [hasPlayed, setHasPlayed] = useState(false);
   const inputRef = useRef(null);
+  const lastJudgmentRef = useRef(null);
 
-  const card = cards[index] || null;
-  const done = index >= cards.length;
+  const activeCards = singleCard ? [singleCard] : cards;
+  const card = activeCards[index] || null;
+  const done = !singleCard && index >= activeCards.length;
 
   // Auto-play on new card
   useEffect(() => {
@@ -45,15 +47,20 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText }) {
       correct: prev.correct + (isCorrect ? 1 : 0),
       incorrect: prev.incorrect + (isCorrect ? 0 : 1),
     }));
+    lastJudgmentRef.current = judgment;
     onJudge(card.target, judgment, 'forward');
   }, [input, card, revealed, onJudge]);
 
   const handleNext = useCallback(() => {
+    if (singleCard && onComplete) {
+      onComplete(lastJudgmentRef.current);
+      return;
+    }
     setIndex(i => i + 1);
     setInput('');
     setRevealed(false);
     setHasPlayed(false);
-  }, []);
+  }, [singleCard, onComplete]);
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -67,7 +74,7 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [revealed, handleNext, onClose]);
 
-  if (cards.length === 0) {
+  if (activeCards.length === 0) {
     return (
       <div className="quiz-listening__empty">
         <p className="text-muted">{t('flashcard.noListeningCards')}</p>
@@ -94,7 +101,7 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText }) {
     <div className="quiz-listening">
       <div className="flashcard-progress">
         <span className="flashcard-progress__count text-muted">
-          {t('flashcard.remaining', { count: cards.length - index })}
+          {t('flashcard.remaining', { count: activeCards.length - index })}
         </span>
       </div>
 

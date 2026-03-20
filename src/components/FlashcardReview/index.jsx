@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '../../context/useAppSelector';
 import { actions } from '../../context/actions';
 import { getAllLanguages, getLang } from '../../lib/languages';
@@ -10,6 +10,8 @@ import { calculateSRS, buildDailySession } from './srs';
 import { useMasteryStats } from './useMasteryStats';
 import FlashcardDoneScreen from './FlashcardDoneScreen';
 import FlashcardCard from './FlashcardCard';
+import ModePicker from './ModePicker';
+import QuizMixCard from './QuizMixCard';
 import FillBlankMode from './FillBlankMode';
 import ListeningMode from './ListeningMode';
 import MatchingMode from './MatchingMode';
@@ -24,6 +26,17 @@ function formatInterval(days) {
   if (days < 30) return `${Math.round(days / 7)}w`;
   return `${Math.round(days / 30)}mo`;
 }
+
+// Map initialMode values to reviewMode values
+function resolveInitialMode(initialMode) {
+  if (!initialMode) return 'pick';
+  if (initialMode === 'flashcard') return 'srs';
+  if (initialMode === 'quizmix') return 'quizmix';
+  // Specific exercise types pass through
+  return initialMode;
+}
+
+const STANDALONE_MODES = new Set(['fillblank', 'listening', 'matching', 'sentence', 'context', 'reverse']);
 
 export default function FlashcardReview({ onClose, initialLangId, initialMode, vocabFilter }) {
   const t = useT();
@@ -49,7 +62,11 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
     return availableLangs.length > 0 ? availableLangs[0].id : 'zh';
   });
 
-  const [quizMode, setQuizMode] = useState(initialMode || 'flashcard'); // 'flashcard' | 'fillblank' | 'listening' | 'matching' | 'sentence' | 'context' | 'reverse'
+  // reviewMode: 'pick' | 'srs' | 'quizmix' | 'fillblank' | 'listening' | 'matching' | 'sentence' | 'context' | 'reverse'
+  const [reviewMode, setReviewMode] = useState(() => resolveInitialMode(initialMode));
+
+  // Track the last exercise type used in quiz mix to avoid repeats
+  const lastExerciseTypeRef = useRef(null);
 
   // Romanization for flashcard front
   const langConfig = getLang(langFilter);
@@ -169,7 +186,7 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
 
   const handleReveal = useCallback(() => setPhase('back'), []);
 
-  const handleJudge = useCallback((judgment) => {
+  const handleJudge = useCallback((judgment, exerciseType) => {
     if (!currentCard) return;
 
     const direction = currentDirection;
@@ -183,6 +200,7 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
       word: currentCard.target,
       judgment,
       direction,
+      exerciseType: exerciseType || null,
       wasRequeued,
       previousSRS: {
         [key('interval')]: currentCard[key('interval')],
@@ -200,6 +218,9 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
     // Calculate and persist SRS update
     const srsUpdate = calculateSRS(judgment, currentCard, direction);
     act.updateVocabSRS(currentCard.target, srsUpdate);
+
+    // Track exercise type for quiz mix variety
+    if (exerciseType) lastExerciseTypeRef.current = exerciseType;
 
     const newResults = { ...session.results, [judgment]: session.results[judgment] + 1 };
     const newIndex = session.index + 1;
@@ -261,7 +282,7 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
     setPhase(newSession.cardKeys.length === 0 ? 'done' : 'front');
   }, [langCards, newCardsPerDay, langFilter]);
 
-  // Handler for quiz mode sub-components
+  // Handler for standalone quiz mode sub-components
   const handleQuizJudge = useCallback((word, judgment, direction) => {
     act.logActivity('flashcard_reviewed', { word, judgment, direction });
     const card = langCards.find(c => c.target === word);
@@ -270,6 +291,21 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
       act.updateVocabSRS(word, srsUpdate);
     }
   }, [langCards, act]);
+
+  // Mode picker handler
+  const handleSelectMode = useCallback((mode) => {
+    setReviewMode(mode);
+    // Reset phase when entering SRS/quizmix from picker
+    if (mode === 'srs' || mode === 'quizmix') {
+      if (session.index < session.cardKeys.length) {
+        setPhase('front');
+      }
+    }
+  }, [session]);
+
+  const handleBackToModes = useCallback(() => {
+    setReviewMode('pick');
+  }, []);
 
   // Close on Escape, keyboard navigation for flashcards
   useEffect(() => {
@@ -283,10 +319,13 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
         return;
       }
 
+      // Only handle keyboard for SRS and quizmix modes (not standalone exercises)
+      if (reviewMode !== 'srs' && reviewMode !== 'quizmix') return;
+
       if (phase === 'front' && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault();
         handleReveal();
-      } else if (phase === 'back') {
+      } else if (phase === 'back' && reviewMode === 'srs') {
         if (e.key === '1') handleJudge('got');
         else if (e.key === '2') handleJudge('almost');
         else if (e.key === '3') handleJudge('missed');
@@ -294,7 +333,7 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, phase, handleReveal, handleJudge, handleUndo, history.length]);
+  }, [onClose, phase, reviewMode, handleReveal, handleJudge, handleUndo, history.length]);
 
   // Mastery stats for done screen
   const masteryStats = useMasteryStats(langCards);
@@ -321,11 +360,22 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
     );
   }
 
+  const isSrsOrQuizMix = reviewMode === 'srs' || reviewMode === 'quizmix';
+  const isStandaloneExercise = STANDALONE_MODES.has(reviewMode);
+  const showSessionDone = isSrsOrQuizMix && (totalCards === 0 || (phase !== 'done' && cardIdx >= totalCards) || phase === 'done');
+
   return (
     <div className="modal-overlay flashcard-overlay" role="dialog" aria-modal="true" aria-label="Flashcard review" onClick={e => e.target === e.currentTarget && onClose?.()}>
       <div className="flashcard-modal card card-padded fade-in">
         <div className="flashcard-modal__header">
-          <h2 className="font-display flashcard-modal__title">{t('flashcard.title')}</h2>
+          {reviewMode !== 'pick' && (
+            <button className="btn btn-ghost btn-sm flashcard-modal__back" onClick={handleBackToModes} aria-label={t('flashcard.backToModes')}>
+              ← {t('flashcard.backToModes')}
+            </button>
+          )}
+          {reviewMode === 'pick' && (
+            <h2 className="font-display flashcard-modal__title">{t('flashcard.title')}</h2>
+          )}
           <button className="btn btn-ghost btn-sm flashcard-modal__close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
@@ -344,41 +394,39 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
           </div>
         )}
 
-        {/* Quiz mode tabs */}
-        <div className="flashcard-mode-tabs">
-          {['flashcard', 'fillblank', 'listening', 'matching', 'sentence', 'context', 'reverse'].map(mode => (
-            <button
-              key={mode}
-              className={`flashcard-mode-tab ${quizMode === mode ? 'flashcard-mode-tab--active' : ''}`}
-              onClick={() => setQuizMode(mode)}
-            >
-              {{ flashcard: t('flashcard.cards'), fillblank: t('flashcard.fillBlank'), listening: t('flashcard.listening'), matching: t('flashcard.matching'), sentence: t('flashcard.sentenceBuilder'), context: t('flashcard.contextClue'), reverse: t('flashcard.reverseListening') }[mode]}
-            </button>
-          ))}
-        </div>
+        {/* ── Mode Picker ─────────────────────────────────── */}
+        {reviewMode === 'pick' && (
+          <ModePicker
+            dueCount={dueCount}
+            newCount={newCount}
+            langCards={langCards}
+            langId={langFilter}
+            onSelectMode={handleSelectMode}
+          />
+        )}
 
-        {/* Render sub-mode components */}
-        {quizMode === 'fillblank' && (
+        {/* ── Standalone exercise modes ───────────────────── */}
+        {reviewMode === 'fillblank' && (
           <FillBlankMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} />
         )}
-        {quizMode === 'listening' && (
+        {reviewMode === 'listening' && (
           <ListeningMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} speakText={speakText} />
         )}
-        {quizMode === 'matching' && (
+        {reviewMode === 'matching' && (
           <MatchingMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} />
         )}
-        {quizMode === 'sentence' && (
+        {reviewMode === 'sentence' && (
           <SentenceBuilderMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} langId={langFilter} />
         )}
-        {quizMode === 'context' && (
+        {reviewMode === 'context' && (
           <ContextClueMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} />
         )}
-        {quizMode === 'reverse' && (
+        {reviewMode === 'reverse' && (
           <ReverseListeningMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} />
         )}
 
-        {/* Session stats (flashcard mode only) */}
-        {quizMode === 'flashcard' && phase !== 'done' && (
+        {/* ── SRS / Quiz Mix session stats ────────────────── */}
+        {isSrsOrQuizMix && !showSessionDone && (
           <div className="flashcard-session-stats">
             <span className="flashcard-stat-badge flashcard-stat-badge--due">{t('flashcard.due', { count: dueCount })}</span>
             <span className="flashcard-stat-badge flashcard-stat-badge--new">{t('flashcard.new', { count: newCount })}</span>
@@ -387,7 +435,8 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
           </div>
         )}
 
-        {quizMode === 'flashcard' && (totalCards === 0 || (phase !== 'done' && cardIdx >= totalCards) || phase === 'done' ? (
+        {/* ── SRS / Quiz Mix done screen ──────────────────── */}
+        {showSessionDone && (
           <FlashcardDoneScreen
             phase={phase}
             totalCards={totalCards}
@@ -401,7 +450,10 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
             onNewSession={handleNewSession}
             onClose={onClose}
           />
-        ) : quizMode === 'flashcard' ? (
+        )}
+
+        {/* ── SRS Review mode (classic flip cards) ────────── */}
+        {reviewMode === 'srs' && !showSessionDone && (
           <FlashcardCard
             currentCard={currentCard}
             currentDirection={currentDirection}
@@ -417,7 +469,30 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
             onJudge={handleJudge}
             onUndo={handleUndo}
           />
-        ) : null)}
+        )}
+
+        {/* ── Quiz Mix mode ───────────────────────────────── */}
+        {reviewMode === 'quizmix' && !showSessionDone && currentCard && (
+          <QuizMixCard
+            key={`${currentCard.target}-${cardIdx}`}
+            card={currentCard}
+            direction={currentDirection}
+            langId={langFilter}
+            speakText={speakText}
+            allCards={langCards}
+            onJudge={handleJudge}
+            previousType={lastExerciseTypeRef.current}
+            phase={phase}
+            previews={previews}
+            romanizationOn={romanizationOn}
+            romanizer={romanizer}
+            renderRomanization={renderRomanization}
+            onReveal={handleReveal}
+            totalCards={totalCards}
+            cardIdx={cardIdx}
+            history={history}
+          />
+        )}
       </div>
     </div>
   );

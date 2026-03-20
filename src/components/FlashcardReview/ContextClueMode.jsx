@@ -1,19 +1,28 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useT } from '../../i18n';
 
 /**
  * Context Clue mode — multiple-choice fill-in-the-blank.
  * Shows an example sentence with the target blanked out + 4 MC options.
  */
-export default function ContextClueMode({ cards, onJudge, onClose }) {
+export default function ContextClueMode({ cards, onJudge, onClose, singleCard, onComplete }) {
   const t = useT();
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [revealed, setRevealed] = useState(false);
   const [results, setResults] = useState({ correct: 0, incorrect: 0 });
+  const lastJudgmentRef = useRef(null);
 
   // Cards where the example contains the target word
   const eligibleCards = useMemo(() => {
+    if (singleCard) {
+      const c = singleCard;
+      if (c.exampleSentence?.includes(c.target))
+        return [{ ...c, fillSentence: c.exampleSentence }];
+      if (c.exampleExtra?.includes(c.target))
+        return [{ ...c, fillSentence: c.exampleExtra }];
+      return [];
+    }
     return cards.map(c => {
       if (c.exampleSentence?.includes(c.target))
         return { ...c, fillSentence: c.exampleSentence };
@@ -21,10 +30,10 @@ export default function ContextClueMode({ cards, onJudge, onClose }) {
         return { ...c, fillSentence: c.exampleExtra };
       return null;
     }).filter(Boolean);
-  }, [cards]);
+  }, [cards, singleCard]);
 
   const card = eligibleCards[index] || null;
-  const done = index >= eligibleCards.length;
+  const done = !singleCard && index >= eligibleCards.length;
 
   // Build blanked sentence
   const blankedSentence = useMemo(() => {
@@ -36,7 +45,9 @@ export default function ContextClueMode({ cards, onJudge, onClose }) {
   const options = useMemo(() => {
     if (!card) return [];
     const distractors = [];
-    const otherTargets = eligibleCards
+    // In singleCard mode, draw distractors from the full cards array
+    const pool = singleCard ? cards : eligibleCards;
+    const otherTargets = pool
       .filter(c => c.target !== card.target)
       .map(c => c.target);
 
@@ -67,14 +78,19 @@ export default function ContextClueMode({ cards, onJudge, onClose }) {
       correct: prev.correct + (isCorrect ? 1 : 0),
       incorrect: prev.incorrect + (isCorrect ? 0 : 1),
     }));
+    lastJudgmentRef.current = judgment;
     onJudge(card.target, judgment, 'forward');
   }, [card, revealed, onJudge]);
 
   const handleNext = useCallback(() => {
+    if (singleCard && onComplete) {
+      onComplete(lastJudgmentRef.current);
+      return;
+    }
     setIndex(i => i + 1);
     setSelected(null);
     setRevealed(false);
-  }, []);
+  }, [singleCard, onComplete]);
 
   useEffect(() => {
     function handleKeyDown(e) {
