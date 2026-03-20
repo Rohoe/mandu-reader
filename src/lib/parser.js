@@ -8,17 +8,18 @@ import { getLang, DEFAULT_LANG_ID } from './languages';
 // ── Default result shape ──────────────────────────────────────
 
 const EMPTY_RESULT = Object.freeze({
-  raw:            '',
-  titleZh:        '',
-  titleEn:        '',
-  story:          '',
-  vocabulary:     [],
-  questions:      [],
-  ankiJson:       [],
-  grammarNotes:   [],
-  parseWarnings:  [],
-  parseError:     null,
-  langId:         DEFAULT_LANG_ID,
+  raw:              '',
+  titleZh:          '',
+  titleEn:          '',
+  story:            '',
+  vocabulary:       [],
+  questions:        [],
+  ankiJson:         [],
+  grammarNotes:     [],
+  suggestedTopics:  [],
+  parseWarnings:    [],
+  parseError:       null,
+  langId:           DEFAULT_LANG_ID,
 });
 
 // ── Extraction pipeline functions ─────────────────────────────
@@ -112,12 +113,22 @@ function extractAnkiJson(rawText) {
 
 function extractGrammarNotes(rawText) {
   const grammarSectionMatch = rawText.match(
-    /#{2,4}\s*(?:6\.[^\n]*|(?:Grammar|语法|문법)[^\n]*)\s*\n+([\s\S]*?)(?=#{2,4}\s*7\.|$)/i
+    /#{2,4}\s*(?:6\.[^\n]*|(?:Grammar|语法|문법)[^\n]*)\s*\n+([\s\S]*?)(?=#{2,4}\s*(?:7\.|Suggested)|$)/i
   );
   if (grammarSectionMatch) {
     return parseGrammarNotes(grammarSectionMatch[1]);
   }
   return [];
+}
+
+function extractSuggestedTopics(rawText) {
+  const match = rawText.match(
+    /#{2,4}\s*(?:7\.[^\n]*|Suggested\s+Topics[^\n]*)\s*\n+([\s\S]*?)(?=#{2,4}\s|$)/i
+  );
+  if (!match) return [];
+  return match[1].split('\n')
+    .map(line => line.replace(/^[-•*\d.)\s]+/, '').trim())
+    .filter(line => line.length > 0 && line.length < 200);
 }
 
 function enrichVocabularyWithAnki(vocabulary, ankiJson, langConfig) {
@@ -192,13 +203,14 @@ export function parseReaderResponse(rawText, langId = DEFAULT_LANG_ID) {
     const questions = extractComprehensionQuestions(rawText);
     const ankiJson = extractAnkiJson(rawText);
     const grammarNotes = extractGrammarNotes(rawText);
+    const suggestedTopics = extractSuggestedTopics(rawText);
     const enrichedVocabulary = enrichVocabularyWithAnki(vocabulary, ankiJson, langConfig);
 
     return {
       raw: rawText,
       titleZh, titleEn, story,
       vocabulary: enrichedVocabulary,
-      questions, ankiJson, grammarNotes,
+      questions, ankiJson, grammarNotes, suggestedTopics,
       parseWarnings: [...titleWarnings, ...storyWarnings],
       parseError: null,
       langId,
@@ -647,15 +659,16 @@ export function normalizeStructuredReader(rawJson, langId = DEFAULT_LANG_ID) {
   }));
 
   return {
-    raw:          typeof rawJson === 'string' ? rawJson : JSON.stringify(data),
-    titleZh:      data.title_target || '',
-    titleEn:      data.title_en || '',
-    story:        data.story || '',
+    raw:              typeof rawJson === 'string' ? rawJson : JSON.stringify(data),
+    titleZh:          data.title_target || '',
+    titleEn:          data.title_en || '',
+    story:            data.story || '',
     vocabulary,
     questions,
     ankiJson,
     grammarNotes,
-    parseError:   null,
+    suggestedTopics:  data.suggested_topics || [],
+    parseError:       null,
     langId,
   };
 }

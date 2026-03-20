@@ -171,6 +171,7 @@ export default {
   'topicForm.using': 'Using {model}',
   'topicForm.apiKeyRequired': 'API key required. Open Settings to add your key.',
   'topicForm.enterTopic': 'Enter a topic above to get started',
+  'topicForm.suggestedTopics': 'Try these topics',
   'topicForm.generatingSyllabus': 'Generating syllabus…',
 
   // ── Generation Progress ───────────────────────────────────────

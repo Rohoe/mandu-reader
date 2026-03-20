@@ -153,6 +153,7 @@ export default {
   'topicForm.using': 'Usando {model}',
   'topicForm.apiKeyRequired': 'Se requiere clave API. Abre Ajustes para añadir tu clave.',
   'topicForm.enterTopic': 'Introduce un tema arriba para comenzar',
+  'topicForm.suggestedTopics': 'Temas sugeridos',
   'topicForm.generatingSyllabus': 'Generando plan de estudios…',
   'progress.connectingTo': 'Conectando con {provider}…',
   'progress.designingLessons': 'Diseñando la estructura de las lecciones…',

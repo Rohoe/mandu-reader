@@ -153,6 +153,7 @@ export default {
   'topicForm.using': '使用 {model}',
   'topicForm.apiKeyRequired': '需要 API 密鑰。打開設定加入你嘅密鑰。',
   'topicForm.enterTopic': '喺上面輸入主題嚟開始',
+  'topicForm.suggestedTopics': '推薦話題',
   'topicForm.generatingSyllabus': '生成緊課程大綱…',
   'progress.connectingTo': '連接緊 {provider}…',
   'progress.designingLessons': '設計緊課程結構…',

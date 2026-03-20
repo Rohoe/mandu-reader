@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useMemo, useEffect, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import { useAppSelector, useAppDispatch } from '../context/useAppSelector';
 import { actions } from '../context/actions';
@@ -14,9 +14,9 @@ import GenerationProgress from './GenerationProgress';
 import './TopicForm.css';
 
 export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStandaloneGenerating, onCancel, onOpenSettings }) {
-  const { apiKey, defaultLevels, learnedVocabulary, generatedReaders, syllabi, learningActivity, maxTokens, loading, providerKeys, activeProvider, activeModels, customBaseUrl, nativeLang } = useAppSelector(s => ({
+  const { apiKey, defaultLevels, learnedVocabulary, generatedReaders, syllabi, standaloneReaders, learningActivity, maxTokens, loading, providerKeys, activeProvider, activeModels, customBaseUrl, nativeLang } = useAppSelector(s => ({
     apiKey: s.apiKey, defaultLevels: s.defaultLevels || {}, nativeLang: s.nativeLang || 'en',
-    learnedVocabulary: s.learnedVocabulary, generatedReaders: s.generatedReaders, syllabi: s.syllabi, learningActivity: s.learningActivity,
+    learnedVocabulary: s.learnedVocabulary, generatedReaders: s.generatedReaders, syllabi: s.syllabi, standaloneReaders: s.standaloneReaders || [], learningActivity: s.learningActivity,
     maxTokens: s.maxTokens, loading: s.loading,
     providerKeys: s.providerKeys, activeProvider: s.activeProvider, activeModels: s.activeModels, customBaseUrl: s.customBaseUrl,
   }));
@@ -35,6 +35,24 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
   const [mode, setMode]           = useState('syllabus'); // 'syllabus' | 'standalone'
   const [lessonCount, setLessonCount] = useState(6);
   const [readerLength, setReaderLength] = useState(1200);
+  const [suggestions, setSuggestions] = useState([]);
+
+  const recentTopics = useMemo(() => {
+    const all = [
+      ...syllabi.filter(s => s.langId === langId && !s.archived).map(s => ({ topic: s.topic, t: s.createdAt })),
+      ...standaloneReaders.filter(r => r.langId === langId && !r.archived).map(r => ({ topic: r.topic, t: r.createdAt })),
+    ];
+    all.sort((a, b) => (b.t || 0) - (a.t || 0));
+    const seen = new Set();
+    return all.filter(a => { const k = a.topic?.toLowerCase(); if (!k || seen.has(k)) return false; seen.add(k); return true; }).slice(0, 5).map(a => a.topic);
+  }, [syllabi, standaloneReaders, langId]);
+
+  useEffect(() => {
+    const all = [...syllabi, ...standaloneReaders]
+      .filter(s => s.langId === langId && s.suggestedTopics?.length > 0 && !s.archived)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    setSuggestions(all[0]?.suggestedTopics || []);
+  }, [langId, syllabi, standaloneReaders]);
 
   const langConfig = getLang(langId);
   const languages = getAllLanguages().filter(l => l.id !== nativeLang);
@@ -49,7 +67,7 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
     try {
       const llmConfig = buildLLMConfig({ providerKeys, activeProvider, activeModels, customBaseUrl });
       const learnerProfile = buildLearnerProfile(learnedVocabulary, generatedReaders, syllabi, learningActivity, langId);
-      const { summary, lessons } = await generateSyllabus(llmConfig, topic.trim(), level, lessonCount, langId, nativeLang, { learnerProfile });
+      const { summary, lessons, suggestedTopics } = await generateSyllabus(llmConfig, topic.trim(), level, lessonCount, langId, nativeLang, { learnerProfile, recentTopics });
       const newSyllabus = {
         id:        `syllabus_${Date.now().toString(36)}`,
         topic:     topic.trim(),
@@ -57,8 +75,10 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
         langId:    langId,
         summary,
         lessons,
+        suggestedTopics,
         createdAt: Date.now(),
       };
+      setSuggestions(suggestedTopics || []);
       act.addSyllabus(newSyllabus);
       act.notify('success', t('notify.syllabusGenerated', { count: lessons.length, topic }));
       onNewSyllabus?.(newSyllabus.id);
@@ -86,13 +106,20 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
     // Generate in background — form can close, user can navigate away
     try {
       const llmConfig = buildLLMConfig({ providerKeys, activeProvider, activeModels, customBaseUrl });
-      const raw    = await generateReader(llmConfig, topicStr, level, learnedVocabulary, readerLength, maxTokens, null, langId, { nativeLang });
+      const raw    = await generateReader(llmConfig, topicStr, level, learnedVocabulary, readerLength, maxTokens, null, langId, { nativeLang, recentTopics });
       const parsed = parseReaderResponse(raw, langId);
       pushGeneratedReader(lessonKey, { ...parsed, topic: topicStr, level, langId: langId, lessonKey, isStandalone: true });
       // Update sidebar metadata with generated titles so they persist across reloads
+      const metaUpdate = { key: lessonKey };
       if (parsed.titleZh || parsed.titleEn) {
-        act.updateStandaloneReaderMeta({ key: lessonKey, titleZh: parsed.titleZh, titleEn: parsed.titleEn });
+        metaUpdate.titleZh = parsed.titleZh;
+        metaUpdate.titleEn = parsed.titleEn;
       }
+      if (parsed.suggestedTopics?.length > 0) {
+        metaUpdate.suggestedTopics = parsed.suggestedTopics;
+        setSuggestions(parsed.suggestedTopics);
+      }
+      act.updateStandaloneReaderMeta(metaUpdate);
       const vocab = mapReaderVocabulary(parsed, langId);
       if (vocab) act.addVocabulary(vocab);
       act.notify('success', t('notify.readerReady', { topic: topicStr }));
@@ -182,6 +209,18 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
           disabled={loading}
         />
       </div>
+
+      {suggestions.length > 0 && !loading && (
+        <div className="topic-form__suggestions">
+          <span className="topic-form__suggestions-label">{t('topicForm.suggestedTopics')}</span>
+          <div className="topic-form__suggestions-chips">
+            {suggestions.map((s, i) => (
+              <button key={i} type="button" className="topic-form__suggestion-chip"
+                onClick={() => setTopic(s)}>{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="form-group">
         <label className="form-label">{t('topicForm.level', { profName: langConfig.proficiency.name })}</label>

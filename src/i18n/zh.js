@@ -153,6 +153,7 @@ export default {
   'topicForm.using': '使用 {model}',
   'topicForm.apiKeyRequired': '需要 API 密钥。打开设置添加您的密钥。',
   'topicForm.enterTopic': '在上方输入主题以开始',
+  'topicForm.suggestedTopics': '推荐话题',
   'topicForm.generatingSyllabus': '正在生成课程大纲…',
   'progress.connectingTo': '正在连接 {provider}…',
   'progress.designingLessons': '正在设计课程结构…',

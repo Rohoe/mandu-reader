@@ -153,6 +153,7 @@ export default {
   'topicForm.using': '{model} 사용 중',
   'topicForm.apiKeyRequired': 'API 키가 필요합니다. 설정을 열어 키를 추가하세요.',
   'topicForm.enterTopic': '위에 주제를 입력하여 시작하세요',
+  'topicForm.suggestedTopics': '추천 주제',
   'topicForm.generatingSyllabus': '커리큘럼 생성 중…',
   'progress.connectingTo': '{provider}에 연결 중…',
   'progress.designingLessons': '수업 구조 설계 중…',

@@ -153,6 +153,7 @@ export default {
   'topicForm.using': 'Utilisation de {model}',
   'topicForm.apiKeyRequired': 'Cl\u00e9 API requise. Ouvrez les Param\u00e8tres pour ajouter votre cl\u00e9.',
   'topicForm.enterTopic': 'Entrez un sujet ci-dessus pour commencer',
+  'topicForm.suggestedTopics': 'Sujets sugg\u00e9r\u00e9s',
   'topicForm.generatingSyllabus': 'G\u00e9n\u00e9ration du programme\u2026',
   'progress.connectingTo': 'Connexion \u00e0 {provider}\u2026',
   'progress.designingLessons': 'Conception de la structure des le\u00e7ons\u2026',
