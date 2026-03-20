@@ -33,9 +33,9 @@ export function useTTS({ langConfig, langId, voiceURIs, setTtsVoice, speechRate 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ttsSupported, langId]);
 
-  const speakText = useCallback((text, key) => {
+  const speakText = useCallback((text, key, options = {}) => {
     if (!ttsSupported) return;
-    if (speakingKey === key) {
+    if (speakingKey === key && !options.rate) {
       window.speechSynthesis.cancel();
       setSpeakingKey(null);
       return;
@@ -49,7 +49,8 @@ export function useTTS({ langConfig, langId, voiceURIs, setTtsVoice, speechRate 
     } else {
       utterance.lang = langConfig.tts.defaultLang;
     }
-    utterance.rate = (ttsSpeechRate ?? 1) * langConfig.tts.defaultRate;
+    const baseRate = (ttsSpeechRate ?? 1) * langConfig.tts.defaultRate;
+    utterance.rate = options.rate ? baseRate * options.rate : baseRate;
     utterance.onend = () => setSpeakingKey(null);
     utterance.onerror = () => setSpeakingKey(null);
     utteranceRef.current = utterance;

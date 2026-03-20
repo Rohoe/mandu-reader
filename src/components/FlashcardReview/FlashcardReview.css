@@ -554,6 +554,27 @@
   font-size: var(--text-base);
 }
 
+.quiz-listening__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.quiz-listening__slow {
+  font-size: var(--text-sm);
+}
+
+.quiz-listening__hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted, #6b7280);
+}
+
+.quiz-listening__hint-text {
+  font-size: var(--text-sm);
+  font-style: italic;
+  animation: flashcard-reveal 0.2s ease;
+}
+
 .quiz-listening__form {
   display: flex;
   gap: var(--space-2);

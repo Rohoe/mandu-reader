@@ -12,6 +12,7 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText, sing
   const [revealed, setRevealed] = useState(false);
   const [results, setResults] = useState({ correct: 0, incorrect: 0 });
   const [hasPlayed, setHasPlayed] = useState(false);
+  const [hintRevealed, setHintRevealed] = useState(false);
   const inputRef = useRef(null);
   const lastJudgmentRef = useRef(null);
 
@@ -34,6 +35,12 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText, sing
   const handleReplay = useCallback(() => {
     if (card && speakText) {
       speakText(card.target, `listening-${index}`);
+    }
+  }, [card, speakText, index]);
+
+  const handlePlaySlow = useCallback(() => {
+    if (card && speakText) {
+      speakText(card.target, `listening-slow-${index}`, { rate: 0.5 });
     }
   }, [card, speakText, index]);
 
@@ -60,6 +67,7 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText, sing
     setInput('');
     setRevealed(false);
     setHasPlayed(false);
+    setHintRevealed(false);
   }, [singleCard, onComplete]);
 
   useEffect(() => {
@@ -106,11 +114,24 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText, sing
       </div>
 
       <div className="quiz-listening__prompt">
-        <button className="btn btn-secondary quiz-listening__play" onClick={handleReplay} aria-label="Play audio">
-          <span aria-hidden="true" style={{ fontSize: '1.5rem' }}>&#9654;</span>
-          <span>{t('flashcard.playAgain')}</span>
-        </button>
+        <div className="quiz-listening__controls">
+          <button className="btn btn-secondary quiz-listening__play" onClick={handleReplay} aria-label="Play audio">
+            <span aria-hidden="true" style={{ fontSize: '1.5rem' }}>&#9654;</span>
+            <span>{t('flashcard.playAgain')}</span>
+          </button>
+          <button className="btn btn-ghost btn-sm quiz-listening__slow" onClick={handlePlaySlow} aria-label="Play slow">
+            <span aria-hidden="true">&#128034;</span> {t('flashcard.playSlow')}
+          </button>
+        </div>
         <p className="text-muted" style={{ fontSize: 'var(--text-sm)' }}>{t('flashcard.typeWhatYouHear')}</p>
+        {!revealed && !hintRevealed && card.translation && (
+          <button className="btn btn-ghost btn-sm quiz-listening__hint" onClick={() => setHintRevealed(true)}>
+            {t('flashcard.showHint')}
+          </button>
+        )}
+        {!revealed && hintRevealed && (
+          <p className="quiz-listening__hint-text text-muted">{card.translation}</p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="quiz-listening__form">

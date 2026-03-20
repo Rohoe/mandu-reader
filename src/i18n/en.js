@@ -80,6 +80,8 @@ export default {
   'settings.reading.ttsVoices': 'TTS Voices',
   'settings.reading.ttsVoicesDesc': 'Choose preferred text-to-speech voices for each language. Recommended voices are listed first.',
   'settings.reading.voice': '{langName} voice',
+  'settings.reading.translateQuestions': 'Translate Comprehension Questions',
+  'settings.reading.translateQuestionsDesc': 'Automatically show translations for all comprehension questions and answer options.',
   'settings.reading.autoVoice': 'Auto (best available)',
 
   // ── Settings — AI tab ─────────────────────────────────────────
@@ -373,6 +375,7 @@ export default {
   'comprehension.matchVocab': 'Match the words with their definitions',
   'comprehension.checkMatches': 'Check Matches',
   'comprehension.matchesResult': '{count}/{total} correct',
+  'comprehension.translatingAll': 'Translating…',
 
   // ── Grammar notes ─────────────────────────────────────────────
   'grammar.title': 'Grammar Notes',
@@ -435,6 +438,8 @@ export default {
   'flashcard.listeningComplete': 'Listening Complete',
   'flashcard.noListeningCards': 'No cards available for listening practice.',
   'flashcard.playAgain': 'Play again',
+  'flashcard.playSlow': 'Slow',
+  'flashcard.showHint': 'Show hint',
   'flashcard.typeWhatYouHear': 'Type what you hear',
   'flashcard.typeTheWord': 'Type the word…',
   'flashcard.matchingComplete': 'Matching Complete',
