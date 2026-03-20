@@ -13,6 +13,9 @@ import FlashcardCard from './FlashcardCard';
 import FillBlankMode from './FillBlankMode';
 import ListeningMode from './ListeningMode';
 import MatchingMode from './MatchingMode';
+import SentenceBuilderMode from './SentenceBuilderMode';
+import ContextClueMode from './ContextClueMode';
+import ReverseListeningMode from './ReverseListeningMode';
 import './FlashcardReview.css';
 
 function formatInterval(days) {
@@ -46,7 +49,7 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
     return availableLangs.length > 0 ? availableLangs[0].id : 'zh';
   });
 
-  const [quizMode, setQuizMode] = useState(initialMode || 'flashcard'); // 'flashcard' | 'fillblank' | 'listening' | 'matching'
+  const [quizMode, setQuizMode] = useState(initialMode || 'flashcard'); // 'flashcard' | 'fillblank' | 'listening' | 'matching' | 'sentence' | 'context' | 'reverse'
 
   // Romanization for flashcard front
   const langConfig = getLang(langFilter);
@@ -343,13 +346,13 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
 
         {/* Quiz mode tabs */}
         <div className="flashcard-mode-tabs">
-          {['flashcard', 'fillblank', 'listening', 'matching'].map(mode => (
+          {['flashcard', 'fillblank', 'listening', 'matching', 'sentence', 'context', 'reverse'].map(mode => (
             <button
               key={mode}
               className={`flashcard-mode-tab ${quizMode === mode ? 'flashcard-mode-tab--active' : ''}`}
               onClick={() => setQuizMode(mode)}
             >
-              {{ flashcard: t('flashcard.cards'), fillblank: t('flashcard.fillBlank'), listening: t('flashcard.listening'), matching: t('flashcard.matching') }[mode]}
+              {{ flashcard: t('flashcard.cards'), fillblank: t('flashcard.fillBlank'), listening: t('flashcard.listening'), matching: t('flashcard.matching'), sentence: t('flashcard.sentenceBuilder'), context: t('flashcard.contextClue'), reverse: t('flashcard.reverseListening') }[mode]}
             </button>
           ))}
         </div>
@@ -363,6 +366,15 @@ export default function FlashcardReview({ onClose, initialLangId, initialMode, v
         )}
         {quizMode === 'matching' && (
           <MatchingMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} />
+        )}
+        {quizMode === 'sentence' && (
+          <SentenceBuilderMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} langId={langFilter} />
+        )}
+        {quizMode === 'context' && (
+          <ContextClueMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} />
+        )}
+        {quizMode === 'reverse' && (
+          <ReverseListeningMode cards={langCards} onJudge={handleQuizJudge} onClose={onClose} />
         )}
 
         {/* Session stats (flashcard mode only) */}

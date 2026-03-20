@@ -335,7 +335,13 @@
   gap: var(--space-1);
   border-bottom: 1px solid var(--color-border-light, #e5e2dc);
   padding-bottom: var(--space-1);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
 }
+
+.flashcard-mode-tabs::-webkit-scrollbar { display: none; }
 
 .flashcard-mode-tab {
   padding: var(--space-1) var(--space-2);
@@ -348,6 +354,8 @@
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
   border-radius: var(--radius) var(--radius) 0 0;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .flashcard-mode-tab:hover {
@@ -549,4 +557,207 @@
 [data-theme="dark"] .flashcard-card__example,
 [data-theme="dark"] .flashcard-card__example-translation {
   color: var(--color-text-muted, #9ca3af);
+}
+
+/* ── Sentence Builder mode ───────────────────────────────── */
+.quiz-sentence {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.quiz-sentence__translation {
+  font-size: var(--text-base);
+  text-align: center;
+  line-height: 1.6;
+  padding: var(--space-2) var(--space-4);
+  font-style: italic;
+}
+
+.quiz-sentence__answer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: 48px;
+  padding: var(--space-3);
+  border: 2px dashed var(--color-border, #d4d0c8);
+  border-radius: var(--radius);
+  width: 100%;
+  align-items: center;
+}
+
+.quiz-sentence__placeholder {
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+
+.quiz-sentence__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  width: 100%;
+}
+
+.quiz-sentence__tile {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border, #d4d0c8);
+  border-radius: 999px;
+  background: var(--color-bg);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quiz-sentence__tile:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.quiz-sentence__tile--placed {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  border-color: var(--color-accent);
+}
+
+.quiz-sentence__tile--correct {
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.quiz-sentence__tile--incorrect {
+  background: var(--color-error-light, #fef2f2);
+  border-color: var(--color-error, #b91c1c);
+  color: var(--color-error, #b91c1c);
+}
+
+.quiz-sentence__feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  animation: flashcard-reveal 0.2s ease;
+}
+
+.quiz-sentence__correct-answer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.quiz-sentence__original {
+  font-size: var(--text-base);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ── Context Clue mode ───────────────────────────────────── */
+.quiz-context {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.quiz-context__options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.quiz-context__option {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border, #d4d0c8);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.quiz-context__option:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.quiz-context__option--correct {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.quiz-context__option--incorrect {
+  border-color: var(--color-error, #b91c1c);
+  background: var(--color-error-light, #fef2f2);
+  color: var(--color-error, #b91c1c);
+}
+
+.quiz-context__feedback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  animation: flashcard-reveal 0.2s ease;
+}
+
+/* ── Reverse Listening mode ──────────────────────────────── */
+.quiz-reverse {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.quiz-reverse__prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+}
+
+.quiz-reverse__target {
+  font-size: 2.5rem;
+  line-height: 1.3;
+  font-weight: 400;
+}
+
+.quiz-reverse__romanization {
+  font-size: var(--text-sm);
+}
+
+.quiz-reverse__form {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+.quiz-reverse__almost {
+  color: #b45309;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ── Dark mode overrides for new modes ───────────────────── */
+[data-theme="dark"] .quiz-sentence__tile--incorrect {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme="dark"] .quiz-context__option--incorrect {
+  background: color-mix(in srgb, #ef4444 15%, transparent);
+  border-color: #f87171;
+  color: #f87171;
+}
+
+[data-theme="dark"] .quiz-reverse__almost {
+  color: #fbbf24;
 }
