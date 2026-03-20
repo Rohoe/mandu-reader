@@ -70,6 +70,10 @@
   font-size: var(--text-lg);
   font-weight: 700;
   color: var(--color-text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 /* ── Mobile sidebar overlay ──────────────────────────────────── */

@@ -329,7 +329,13 @@ function AppShell() {
         >
           ☰
         </button>
-        <span className="app-mobile-title font-display">漫读</span>
+        <button
+          className="app-mobile-title font-display btn-unstyled"
+          onClick={() => { setSyllabusView('dashboard'); setStandaloneKey(null); setSidebarOpen(false); }}
+          aria-label={t('sidebar.home')}
+        >
+          漫读
+        </button>
         <button className="btn btn-ghost btn-sm" onClick={() => setShowSettings(true)} aria-label={t('common.settings')}>
           ⚙
         </button>
