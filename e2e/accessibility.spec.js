@@ -95,7 +95,7 @@ test.describe('Accessibility — keyboard navigation & ARIA', () => {
     // Show the new reader form
     const newBtn = page.locator('button:has-text("New")').first();
     await newBtn.click();
-    await page.waitForSelector('.settings-overlay');
+    await page.waitForSelector('.modal-overlay');
 
     // Find the proficiency level radiogroup (has "Level" in aria-label)
     const levelGroup = page.locator('[role="radiogroup"][aria-label*="Level"]');
@@ -131,7 +131,7 @@ test.describe('Accessibility — keyboard navigation & ARIA', () => {
     // Show form
     const newBtn = page.locator('button:has-text("New")').first();
     await newBtn.click();
-    await page.waitForSelector('.settings-overlay');
+    await page.waitForSelector('.modal-overlay');
 
     // Switch to Single Reader mode
     const singleReaderBtn = page.locator('button:has-text("Single Reader")');

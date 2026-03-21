@@ -23,28 +23,32 @@ test.describe('Demo Reader', () => {
     // Wait for the app to load
     await page.waitForSelector('.app-sidebar');
 
-    // Find a vocab button in the story
-    const vocabBtn = page.locator('.vocab-word, button[class*="vocab"]').first();
-    if (await vocabBtn.isVisible()) {
-      await vocabBtn.click();
-      // Should show a popover with definition (use .first() to handle multiple matching elements)
-      await expect(page.locator('.reader-view__popover').first()).toBeVisible({ timeout: 3000 });
-    }
+    // Find a vocab button in the story (class is reader-view__vocab-btn)
+    const vocabBtn = page.locator('.reader-view__vocab-btn').first();
+    await expect(vocabBtn).toBeVisible({ timeout: 10000 });
+    await vocabBtn.click();
+    // Should show a popover with definition
+    await expect(page.locator('.reader-view__popover').first()).toBeVisible({ timeout: 3000 });
   });
 
   test('English demo reader visible in sidebar with "(sample)" label', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('.app-sidebar');
-    // Both demo readers should show (sample) labels
-    const sampleLabels = page.locator('text=(sample)');
+    // Both demo readers should show (sample) labels in the sidebar
+    const sampleLabels = page.locator('.app-sidebar >> text=(sample)');
     await expect(sampleLabels).toHaveCount(2, { timeout: 10000 });
   });
 
-  test('navigating to English demo shows English story content', async ({ page }) => {
+  test('navigating to English demo shows English story content', async ({ page, isMobile }) => {
     await page.goto('/');
+    // On mobile, open sidebar first
+    if (isMobile) {
+      const hamburger = page.locator('button[aria-label*="menu"], .mobile-header__hamburger').first();
+      await hamburger.click();
+    }
     await page.waitForSelector('.app-sidebar');
     // Click on the English demo reader in the sidebar
-    const enDemo = page.locator('text=A New School');
+    const enDemo = page.locator('.app-sidebar >> text=A New School');
     await enDemo.click();
     // Verify English story content appears
     await expect(page.locator('body')).toContainText('Li Wei', { timeout: 10000 });
