@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useT } from '../../i18n';
+import { useFlashcardKeyboard } from '../../hooks/useFlashcardKeyboard';
 
 /**
  * Fill-in-the-blank quiz mode.
@@ -74,17 +75,7 @@ export default function FillBlankMode({ cards, onJudge, onClose, singleCard, onC
     setRevealed(false);
   }, [singleCard, onComplete]);
 
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') { onClose?.(); return; }
-      if (revealed && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        handleNext();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [revealed, handleNext, onClose]);
+  useFlashcardKeyboard({ onClose, onNext: handleNext, enabled: revealed });
 
   if (eligibleCards.length === 0) {
     return (

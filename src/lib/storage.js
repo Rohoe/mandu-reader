@@ -10,6 +10,10 @@
  */
 
 import { writeJSON, FILES } from './fileStorage';
+import { setReaderDirHandle, loadReaderIndex, loadAllReaders, saveReader, deleteReader, saveReaderSafe, loadReader, clearReaders, loadEvictedReaderKeys, saveEvictedReaderKeys, unmarkEvicted, evictStaleReaders } from './readerStorage';
+
+// Re-export reader operations for backward compatibility
+export { loadReaderIndex, loadAllReaders, saveReader, deleteReader, saveReaderSafe, loadReader, clearReaders, loadEvictedReaderKeys, saveEvictedReaderKeys, unmarkEvicted, evictStaleReaders };
 
 // ── Module-level directory handle ─────────────────────────────
 // Set by AppContext after permission is verified on startup.
@@ -18,6 +22,7 @@ let _dirHandle = null;
 
 export function setDirectoryHandle(handle) {
   _dirHandle = handle;
+  setReaderDirHandle(handle);
 }
 
 export function getDirectoryHandle() {
@@ -284,145 +289,6 @@ export function loadStandaloneReaders() {
 export function saveStandaloneReaders(arr) {
   save(KEYS.STANDALONE_READERS, arr);
   saveSyllabiFile();
-}
-
-// ── Generated Readers (cache) — per-reader lazy storage ───────
-
-// Migrate from monolithic key to per-reader keys on first access
-let _migrationDone = false;
-
-function migrateReadersIfNeeded() {
-  if (_migrationDone) return;
-  _migrationDone = true;
-
-  const raw = localStorage.getItem(KEYS.READERS);
-  if (!raw) return;
-
-  try {
-    const allReaders = JSON.parse(raw);
-    const keys = Object.keys(allReaders);
-    if (keys.length === 0) {
-      localStorage.removeItem(KEYS.READERS);
-      return;
-    }
-
-    // Write each reader to its own key
-    for (const key of keys) {
-      try {
-        localStorage.setItem(READER_KEY_PREFIX + key, JSON.stringify(allReaders[key]));
-      } catch (e) {
-        console.warn('[storage] migration: failed to write reader', key, e);
-      }
-    }
-
-    // Write the index
-    save(KEYS.READER_INDEX, keys);
-
-    // Remove the old monolithic key
-    localStorage.removeItem(KEYS.READERS);
-  } catch {
-    // If parsing fails, just remove the corrupt key
-    localStorage.removeItem(KEYS.READERS);
-  }
-}
-
-export function loadReaderIndex() {
-  migrateReadersIfNeeded();
-  return load(KEYS.READER_INDEX, []);
-}
-
-function saveReaderIndex(index) {
-  save(KEYS.READER_INDEX, index);
-}
-
-export function loadAllReaders() {
-  migrateReadersIfNeeded();
-  const index = load(KEYS.READER_INDEX, []);
-  const readers = {};
-  for (const key of index) {
-    const data = load(READER_KEY_PREFIX + key, null);
-    if (data) readers[key] = data;
-  }
-  return readers;
-}
-
-export function saveReader(lessonKey, readerData) {
-  migrateReadersIfNeeded();
-  save(READER_KEY_PREFIX + lessonKey, readerData);
-  // Update index
-  const index = loadReaderIndex();
-  if (!index.includes(lessonKey)) {
-    index.push(lessonKey);
-    saveReaderIndex(index);
-  }
-  // Fan out to file (file still uses monolithic format for compatibility)
-  if (_dirHandle) {
-    const allReaders = loadAllReaders();
-    writeJSON(_dirHandle, FILES.readers, allReaders)
-      .catch(e => console.warn('[storage] file write failed: readers', e));
-  }
-}
-
-export function deleteReader(lessonKey) {
-  migrateReadersIfNeeded();
-  localStorage.removeItem(READER_KEY_PREFIX + lessonKey);
-  const index = loadReaderIndex().filter(k => k !== lessonKey);
-  saveReaderIndex(index);
-  // Fan out to file
-  if (_dirHandle) {
-    const allReaders = loadAllReaders();
-    writeJSON(_dirHandle, FILES.readers, allReaders)
-      .catch(e => console.warn('[storage] file write failed: readers', e));
-  }
-}
-
-/**
- * Like saveReader but catches QuotaExceededError and returns { ok, quotaExceeded }.
- */
-export function saveReaderSafe(lessonKey, readerData) {
-  try {
-    migrateReadersIfNeeded();
-    localStorage.setItem(READER_KEY_PREFIX + lessonKey, JSON.stringify(readerData));
-    // Update index
-    const index = loadReaderIndex();
-    if (!index.includes(lessonKey)) {
-      index.push(lessonKey);
-      saveReaderIndex(index);
-    }
-    // Fan out to file (fire-and-forget, no quota concern)
-    if (_dirHandle) {
-      const allReaders = loadAllReaders();
-      writeJSON(_dirHandle, FILES.readers, allReaders)
-        .catch(e => console.warn('[storage] file write failed: readers', e));
-    }
-    return { ok: true, quotaExceeded: false };
-  } catch (e) {
-    const isQuota = e instanceof DOMException && (
-      e.name === 'QuotaExceededError' ||
-      e.name === 'NS_ERROR_DOM_QUOTA_REACHED'
-    );
-    console.warn('[storage] saveReaderSafe failed:', e);
-    return { ok: false, quotaExceeded: isQuota };
-  }
-}
-
-export function loadReader(lessonKey) {
-  migrateReadersIfNeeded();
-  return load(READER_KEY_PREFIX + lessonKey, null);
-}
-
-export function clearReaders() {
-  migrateReadersIfNeeded();
-  const index = loadReaderIndex();
-  for (const key of index) {
-    localStorage.removeItem(READER_KEY_PREFIX + key);
-  }
-  saveReaderIndex([]);
-  localStorage.removeItem(KEYS.READERS); // clean up legacy key if still present
-  if (_dirHandle) {
-    writeJSON(_dirHandle, FILES.readers, {})
-      .catch(e => console.warn('[storage] file write failed: readers', e));
-  }
 }
 
 // ── Learned Vocabulary ────────────────────────────────────────
@@ -957,98 +823,6 @@ export function loadWeeklyGoals() {
 
 export function saveWeeklyGoals(goals) {
   save(KEYS.WEEKLY_GOALS, goals);
-}
-
-// ── Reader eviction (LRU) ─────────────────────────────────────
-
-const EVICT_MAX_READERS = 30;        // keep at most this many in localStorage
-const EVICT_STALE_DAYS = 30;         // readers not opened in this many days are candidates
-const EVICT_STALE_MS = EVICT_STALE_DAYS * 24 * 60 * 60 * 1000;
-
-// ── Evicted reader keys tracking ──────────────────────────────
-
-export function loadEvictedReaderKeys() {
-  return new Set(load(KEYS.EVICTED_READER_KEYS, []));
-}
-
-export function saveEvictedReaderKeys(set) {
-  save(KEYS.EVICTED_READER_KEYS, [...set]);
-}
-
-export function unmarkEvicted(lessonKey) {
-  const evicted = loadEvictedReaderKeys();
-  if (evicted.has(lessonKey)) {
-    evicted.delete(lessonKey);
-    saveEvictedReaderKeys(evicted);
-  }
-}
-
-/**
- * Evict old readers from localStorage to free space.
- * Only evicts readers that have a confirmed backup (present in backupKeys).
- * Returns the list of evicted lesson keys.
- *
- * @param {{ activeKey?: string, backupKeys?: Set<string> }} options
- */
-export function evictStaleReaders({ activeKey, backupKeys } = {}) {
-  migrateReadersIfNeeded();
-  const index = loadReaderIndex();
-  if (index.length <= EVICT_MAX_READERS) return [];
-
-  // Build metadata for each reader
-  const entries = [];
-  for (const key of index) {
-    if (key === activeKey) continue; // never evict active reader
-    const raw = localStorage.getItem(READER_KEY_PREFIX + key);
-    if (!raw) continue;
-    try {
-      const data = JSON.parse(raw);
-      entries.push({
-        key,
-        lastOpenedAt: data.lastOpenedAt || 0,
-        size: raw.length * 2, // approximate bytes
-      });
-    } catch {
-      entries.push({ key, lastOpenedAt: 0, size: raw.length * 2 });
-    }
-  }
-
-  // Sort by lastOpenedAt ascending (oldest first)
-  entries.sort((a, b) => a.lastOpenedAt - b.lastOpenedAt);
-
-  const now = Date.now();
-  const evicted = [];
-  let remaining = index.length;
-
-  for (const entry of entries) {
-    // Stop once we're within budget
-    if (remaining <= EVICT_MAX_READERS) break;
-    // Only evict if stale (never opened, or opened > EVICT_STALE_DAYS ago)
-    const isStale = !entry.lastOpenedAt || (now - entry.lastOpenedAt > EVICT_STALE_MS);
-    if (!isStale) continue;
-    // Only evict if backed up (when backupKeys provided)
-    if (backupKeys && !backupKeys.has(entry.key)) continue;
-
-    localStorage.removeItem(READER_KEY_PREFIX + entry.key);
-    evicted.push(entry.key);
-    remaining--;
-  }
-
-  if (evicted.length > 0) {
-    // Update index to remove evicted keys
-    const evictedSet = new Set(evicted);
-    const newIndex = index.filter(k => !evictedSet.has(k));
-    saveReaderIndex(newIndex);
-
-    // Track evicted keys
-    const existing = loadEvictedReaderKeys();
-    for (const k of evicted) existing.add(k);
-    saveEvictedReaderKeys(existing);
-
-    console.info(`[storage] Evicted ${evicted.length} stale reader(s) from localStorage`);
-  }
-
-  return evicted;
 }
 
 // ── Storage usage estimate ────────────────────────────────────

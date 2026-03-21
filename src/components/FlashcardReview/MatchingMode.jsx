@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useT } from '../../i18n';
+import { useFlashcardKeyboard } from '../../hooks/useFlashcardKeyboard';
 
 /**
  * Matching quiz mode.
@@ -85,13 +86,7 @@ export default function MatchingMode({ cards, onJudge, onClose }) {
     }
   }, [matched.size, batch.length]);
 
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') onClose?.();
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  useFlashcardKeyboard({ onClose });
 
   if (cards.length === 0) {
     return (

@@ -19,7 +19,7 @@ Extracted from ReaderView. Renders title, proficiency badge, difficulty badge (v
 Extracted from ReaderView. Mark Complete, Regenerate, and other action buttons below the reader content.
 
 ## `StorySection`
-Renders story paragraphs with vocab buttons, TTS click-to-read, popover portal for vocab definitions. Paragraphs are split into clickable sentence spans via `splitParagraphIntoSentences()`. New props: `langId`, `onSentenceClick`, `sentencePopover`, `sentencePopoverRef`, `onSubSelection`, `romanizer`.
+Renders story paragraphs with vocab buttons, TTS click-to-read, popover portal for vocab definitions. Paragraphs are split into clickable sentence spans via `splitParagraphIntoSentences()`. Props grouped into: `ttsProps` (ttsSupported, speakingKey, speakText), `vocabProps` (lookupVocab, handleVocabClick, activeVocab, onCloseVocab), `popoverProps` (popoverRef, getPopoverPosition, selectionPopover, selectionPopoverRef, sentencePopover, sentencePopoverRef, onSentenceClick, onSubSelection, onCloseSelection, onCloseSentence), `translationProps` (paragraphTranslations, onTranslate, translatingIndex). Additional scalar props: `storyParagraphs`, `pinyinOn`, `renderChars`, `showParagraphTools`, `langId`, `nativeLang`, `romanizer`.
 
 ## `SentencePopover`
 Portal-based popover shown on sentence click. Displays original sentence (selectable), romanization (if enabled), and translation (via Google Translate). Supports word drill-down: drag-select text within the popover to see a sub-translation.

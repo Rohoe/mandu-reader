@@ -401,6 +401,35 @@ function extractExamples(text, scriptRegex) {
 
 // ── Comprehension question parser ─────────────────────────────
 
+/**
+ * Splits "question text (translation)" into { text, translation }.
+ * Returns { text: qText, translation: '' } if no trailing parenthetical found.
+ */
+function splitQuestionTranslation(qText) {
+  const m = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
+  return m ? { text: m[1], translation: m[2] } : { text: qText, translation: '' };
+}
+
+/**
+ * Tries to parse an "Answer: X" line at position j in lines array.
+ * @param {string[]} lines
+ * @param {number} j
+ * @param {RegExp} valuePattern - regex for valid answer value (e.g. /[A-D]/ or /[TF]/)
+ * @returns {{ answer: string|null, nextJ: number }}
+ */
+function parseAnswerLine(lines, j, valuePattern) {
+  if (j < lines.length) {
+    const ansLine = lines[j].trim();
+    const ansMatch = ansLine.match(/^Answer:\s*(.+)/i);
+    if (ansMatch) {
+      const val = ansMatch[1].trim();
+      const m = val.match(valuePattern);
+      if (m) return { answer: m[0].toUpperCase(), nextJ: j + 1 };
+    }
+  }
+  return { answer: null, nextJ: j };
+}
+
 function parseQuestions(text) {
   if (!text) return [];
 
@@ -420,9 +449,7 @@ function parseQuestions(text) {
     const mcMatch = cleaned.match(/^\[MC\]\s*(.*)/i);
     if (mcMatch) {
       const qText = mcMatch[1].trim();
-      // Try to consume A./B./C./D. option lines and Answer: line
       const options = [];
-      let correctAnswer = null;
       let j = i + 1;
       while (j < lines.length && options.length < 4) {
         const optLine = lines[j].trim();
@@ -434,32 +461,13 @@ function parseQuestions(text) {
           break;
         }
       }
-      // Look for Answer: line
-      if (j < lines.length) {
-        const ansLine = lines[j].trim();
-        const ansMatch = ansLine.match(/^Answer:\s*([A-D])/i);
-        if (ansMatch) {
-          correctAnswer = ansMatch[1].toUpperCase();
-          j++;
-        }
-      }
-      // Valid MC needs 4 options and a correct answer; otherwise fallback to FR
+      const { answer: correctAnswer, nextJ } = parseAnswerLine(lines, j, /[A-D]/);
+      j = nextJ;
+      const { text: qt, translation } = splitQuestionTranslation(qText);
       if (options.length === 4 && correctAnswer) {
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'mc',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-          options,
-          correctAnswer,
-        });
+        questions.push({ type: 'mc', text: qt, translation, options, correctAnswer });
       } else {
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'fr',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-        });
+        questions.push({ type: 'fr', text: qt, translation });
       }
       i = j;
       continue;
@@ -469,32 +477,14 @@ function parseQuestions(text) {
     const tfMatch = cleaned.match(/^\[TF\]\s*(.*)/i);
     if (tfMatch) {
       const qText = tfMatch[1].trim();
-      let correctAnswer = null;
       let j = i + 1;
-      if (j < lines.length) {
-        const ansLine = lines[j].trim();
-        const ansMatch = ansLine.match(/^Answer:\s*([TF])/i);
-        if (ansMatch) {
-          correctAnswer = ansMatch[1].toUpperCase();
-          j++;
-        }
-      }
+      const { answer: correctAnswer, nextJ } = parseAnswerLine(lines, j, /[TF]/);
+      j = nextJ;
+      const { text: qt, translation } = splitQuestionTranslation(qText);
       if (correctAnswer) {
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'tf',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-          correctAnswer,
-        });
+        questions.push({ type: 'tf', text: qt, translation, correctAnswer });
       } else {
-        // Malformed TF → fallback to FR
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'fr',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-        });
+        questions.push({ type: 'fr', text: qt, translation });
       }
       i = j;
       continue;
@@ -504,19 +494,11 @@ function parseQuestions(text) {
     const fbMatch = cleaned.match(/^\[FB\]\s*(.*)/i);
     if (fbMatch) {
       const qText = fbMatch[1].trim();
-      let correctAnswer = null;
-      let bank = null;
       let j = i + 1;
-      // Look for Answer: line
-      if (j < lines.length) {
-        const ansLine = lines[j].trim();
-        const ansMatch = ansLine.match(/^Answer:\s*(.+)/i);
-        if (ansMatch) {
-          correctAnswer = ansMatch[1].trim();
-          j++;
-        }
-      }
+      const { answer: correctAnswer, nextJ } = parseAnswerLine(lines, j, /.+/);
+      j = nextJ;
       // Look for Bank: line
+      let bank = null;
       if (j < lines.length) {
         const bankLine = lines[j].trim();
         const bankMatch = bankLine.match(/^Bank:\s*(.+)/i);
@@ -525,23 +507,11 @@ function parseQuestions(text) {
           j++;
         }
       }
+      const { text: qt, translation } = splitQuestionTranslation(qText);
       if (correctAnswer && bank && bank.length >= 2) {
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'fb',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-          correctAnswer,
-          bank,
-        });
+        questions.push({ type: 'fb', text: qt, translation, correctAnswer, bank });
       } else {
-        // Malformed FB → fallback to FR
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'fr',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-        });
+        questions.push({ type: 'fr', text: qt, translation });
       }
       i = j;
       continue;
@@ -563,22 +533,11 @@ function parseQuestions(text) {
           break;
         }
       }
+      const { text: qt, translation } = splitQuestionTranslation(qText);
       if (pairs.length >= 2) {
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'vm',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-          pairs,
-        });
+        questions.push({ type: 'vm', text: qt, translation, pairs });
       } else {
-        // Malformed VM → fallback to FR
-        const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-        questions.push({
-          type: 'fr',
-          text: transMatch ? transMatch[1] : qText,
-          translation: transMatch ? transMatch[2] : '',
-        });
+        questions.push({ type: 'fr', text: qt, translation });
       }
       i = j;
       continue;
@@ -587,24 +546,15 @@ function parseQuestions(text) {
     // Check for [FR] tag
     const frMatch = cleaned.match(/^\[FR\]\s*(.*)/i);
     if (frMatch) {
-      const qText = frMatch[1].trim();
-      const transMatch = qText.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-      if (transMatch) {
-        questions.push({ type: 'fr', text: transMatch[1], translation: transMatch[2] });
-      } else {
-        questions.push({ type: 'fr', text: qText, translation: '' });
-      }
+      const { text: qt, translation } = splitQuestionTranslation(frMatch[1].trim());
+      questions.push({ type: 'fr', text: qt, translation });
       i++;
       continue;
     }
 
     // Legacy format (no tag) → FR
-    const transMatch = cleaned.match(/^(.*?\S)\s*\(([^)]+)\)\s*$/);
-    if (transMatch) {
-      questions.push({ type: 'fr', text: transMatch[1], translation: transMatch[2] });
-    } else {
-      questions.push({ type: 'fr', text: cleaned, translation: '' });
-    }
+    const { text: qt, translation } = splitQuestionTranslation(cleaned);
+    questions.push({ type: 'fr', text: qt, translation });
     i++;
   }
 

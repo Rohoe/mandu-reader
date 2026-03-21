@@ -1,4 +1,4 @@
-import { useCallback, useContext, useRef, useEffect, useState } from 'react';
+import { useCallback, useContext, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { useAppDispatch } from '../context/useAppSelector';
 import { actions } from '../context/actions';
@@ -6,13 +6,14 @@ import { generateReader, generateReaderStream } from '../lib/api';
 import { parseReaderResponse, normalizeStructuredReader } from '../lib/parser';
 import { getLang } from '../lib/languages';
 import { buildLearnerContext } from '../lib/stats';
+import { useStreamAccumulator } from './useStreamAccumulator';
 
 export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput = false, nativeLang = 'en', syllabus, generatedReaders, learningActivity }) {
   const dispatch = useAppDispatch();
   const { pushGeneratedReader } = useContext(AppContext);
   const act = actions(dispatch);
   const abortRef = useRef(null);
-  const [streamingText, setStreamingText] = useState(null);
+  const { streamingText, consumeStream, clearStream } = useStreamAccumulator();
 
   // Abort in-flight request on unmount
   useEffect(() => {
@@ -96,15 +97,8 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
     try {
       let raw;
       if (useStreaming) {
-        let accumulated = '';
-        setStreamingText('');
         const stream = generateReaderStream(llmConfig, topic, level, learnedVocabulary, readerLength, maxTokens, null, readerLangId, { ...genOptions });
-        for await (const chunk of stream) {
-          accumulated += chunk;
-          setStreamingText(accumulated);
-        }
-        raw = accumulated;
-        setStreamingText(null);
+        raw = await consumeStream(stream);
       } else {
         raw = await generateReader(llmConfig, topic, level, learnedVocabulary, readerLength, maxTokens, null, readerLangId, { ...genOptions, structured: useStructuredOutput });
       }
@@ -122,7 +116,7 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
       }
       act.notify('success', `Reader ready: ${lessonMeta?.title_en || topic}`);
     } catch (err) {
-      setStreamingText(null);
+      clearStream();
       if (err.message?.includes('timed out') || err.name === 'AbortError') {
         act.notify('error', 'Request timed out. Try again or switch to a faster provider.');
       } else {

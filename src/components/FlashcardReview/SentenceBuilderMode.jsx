@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useT } from '../../i18n';
 import { splitSentence } from './sentenceSplitter';
+import { useFlashcardKeyboard } from '../../hooks/useFlashcardKeyboard';
 
 /**
  * Sentence Builder mode.
@@ -95,17 +96,7 @@ export default function SentenceBuilderMode({ cards, onJudge, onClose, langId, s
     setIsCorrect(false);
   }, [singleCard, onComplete]);
 
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') { onClose?.(); return; }
-      if (revealed && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        handleNext();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [revealed, handleNext, onClose]);
+  useFlashcardKeyboard({ onClose, onNext: handleNext, enabled: revealed });
 
   if (eligibleCards.length === 0) {
     return (

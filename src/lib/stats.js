@@ -4,6 +4,23 @@
 
 import { getLang } from './languages';
 
+/**
+ * Classifies entries into mastered/learning/new based on SRS fields.
+ * @param {Array<[string, object]>} entries - Object.entries()-style array
+ * @returns {{ mastered: number, learning: number, new: number }}
+ */
+function classifyMastery(entries) {
+  let mastered = 0, learning = 0, newCount = 0;
+  for (const [, info] of entries) {
+    const rc = info.reviewCount ?? 0;
+    const interval = info.interval ?? 0;
+    if (rc === 0) newCount++;
+    else if (interval >= 21) mastered++;
+    else learning++;
+  }
+  return { mastered, learning, new: newCount };
+}
+
 export function computeStats(state) {
   const { learnedVocabulary, learnedGrammar, syllabi, syllabusProgress, standaloneReaders, learningActivity, readingTime, generatedReaders } = state;
 
@@ -54,14 +71,7 @@ export function computeStats(state) {
     : null;
 
   // Mastery breakdown from learnedVocabulary
-  let fcMastered = 0, fcLearning = 0, fcNew = 0;
-  for (const [, info] of vocabEntries) {
-    const rc = info.reviewCount ?? 0;
-    const interval = info.interval ?? 0;
-    if (rc === 0) fcNew++;
-    else if (interval >= 21) fcMastered++;
-    else fcLearning++;
-  }
+  const vocabMastery = classifyMastery(vocabEntries);
 
   const flashcardStreak = getFlashcardStreak(learningActivity);
   const reviewForecast = getReviewForecast(learnedVocabulary);
@@ -72,14 +82,7 @@ export function computeStats(state) {
   // ── Grammar stats ─────────────────────────────────────────
   const grammarEntries = Object.entries(learnedGrammar || {});
   const grammarTotal = grammarEntries.length;
-  let gMastered = 0, gLearning = 0, gNew = 0;
-  for (const [, info] of grammarEntries) {
-    const rc = info.reviewCount ?? 0;
-    const interval = info.interval ?? 0;
-    if (rc === 0) gNew++;
-    else if (interval >= 21) gMastered++;
-    else gLearning++;
-  }
+  const grammarMasteryResult = classifyMastery(grammarEntries);
 
   return {
     totalWords,
@@ -97,7 +100,7 @@ export function computeStats(state) {
     totalFlashcardReviews,
     reviewsToday,
     retentionRate,
-    flashcardMastery: { mastered: fcMastered, learning: fcLearning, new: fcNew },
+    flashcardMastery: vocabMastery,
     flashcardStreak,
     reviewForecast,
     retentionCurve,
@@ -106,7 +109,7 @@ export function computeStats(state) {
     readingStats,
     // Grammar stats
     grammarTotal,
-    grammarMastery: { mastered: gMastered, learning: gLearning, new: gNew },
+    grammarMastery: grammarMasteryResult,
   };
 }
 

@@ -10,16 +10,17 @@ import { callLLMChat, callLLMChatStream } from '../lib/chatApi';
 import { buildTutorSystemPrompt } from '../prompts/tutorPrompt';
 import { getLang } from '../lib/languages';
 import { getNativeLang } from '../lib/nativeLanguages';
+import { useStreamAccumulator } from './useStreamAccumulator';
 
 export function useTutorChat({ lessonKey, reader, lessonMeta, langId, nativeLang, llmConfig, syllabus, generatedReaders }) {
   const dispatch = useAppDispatch();
   const act = actions(dispatch);
   const abortRef = useRef(null);
+  const { streamingText, consumeStream, clearStream } = useStreamAccumulator();
 
   // Initialize from persisted chat history
   const [messages, setMessages] = useState(() => reader?.chatHistory || []);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [streamingText, setStreamingText] = useState(null);
   const [summary, setSummary] = useState(() => reader?.chatSummary || null);
   const [error, setError] = useState(null);
 
@@ -29,7 +30,7 @@ export function useTutorChat({ lessonKey, reader, lessonMeta, langId, nativeLang
     setSummary(reader?.chatSummary || null);
     setError(null);
     setIsGenerating(false);
-    setStreamingText(null);
+    clearStream();
   }, [lessonKey, reader?.chatHistory?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Abort on unmount
@@ -87,15 +88,8 @@ export function useTutorChat({ lessonKey, reader, lessonMeta, langId, nativeLang
       let assistantText;
 
       if (useStreaming) {
-        let accumulated = '';
-        setStreamingText('');
         const stream = callLLMChatStream(llmConfig, systemPrompt, updatedMessages, 2048, { signal: controller.signal });
-        for await (const chunk of stream) {
-          accumulated += chunk;
-          setStreamingText(accumulated);
-        }
-        assistantText = accumulated;
-        setStreamingText(null);
+        assistantText = await consumeStream(stream);
       } else {
         assistantText = await callLLMChat(llmConfig, systemPrompt, updatedMessages, 2048, { signal: controller.signal });
       }
@@ -104,7 +98,7 @@ export function useTutorChat({ lessonKey, reader, lessonMeta, langId, nativeLang
       setMessages(finalMessages);
       persistChat(finalMessages);
     } catch (err) {
-      setStreamingText(null);
+      clearStream();
       if (err.name === 'AbortError' || err.message?.includes('aborted')) return;
       setError(err.message || 'Something went wrong');
       // Keep the user message so they can see what was sent
@@ -157,7 +151,7 @@ Format it as a concise summary in ${nativeLangName}.`,
     abortRef.current?.abort();
     setMessages([]);
     setSummary(null);
-    setStreamingText(null);
+    clearStream();
     setIsGenerating(false);
     setError(null);
     if (lessonKey && reader) {
@@ -168,9 +162,9 @@ Format it as a concise summary in ${nativeLangName}.`,
 
   const stopGenerating = useCallback(() => {
     abortRef.current?.abort();
-    setStreamingText(null);
+    clearStream();
     setIsGenerating(false);
-  }, []);
+  }, [clearStream]);
 
   return {
     messages,

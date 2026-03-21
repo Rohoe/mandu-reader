@@ -5,10 +5,10 @@ import { gradeAnswers, gradeMultipleChoice } from '../lib/api';
 import { buildGradingLLMConfig, hasAnyUserKey } from '../lib/llmConfig';
 import VocabMatchingQuestion from './VocabMatchingQuestion';
 import { buildGradingContext } from '../lib/stats';
-import { translateText, batchTranslate } from '../lib/translate';
 import { getNativeLang } from '../lib/nativeLanguages';
 import { renderInline, stripMarkdown } from '../lib/renderInline';
 import { useT } from '../i18n';
+import { useQuestionTranslation } from '../hooks/useQuestionTranslation';
 import './ComprehensionQuestions.css';
 
 function scoreBadgeClass(scoreStr) {
@@ -44,68 +44,13 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
   const [results, setResults] = useState(() => reader?.gradingResults ?? null);
   const [grading, setGrading] = useState(false);
   const [gradingError, setGradingError] = useState(null);
-  const [visibleQTranslations, setVisibleQTranslations] = useState(new Set());
-  const [fetchedQTranslations, setFetchedQTranslations] = useState({});
-  const [translatingQIndex, setTranslatingQIndex] = useState(null);
   const [showSuggested, setShowSuggested] = useState({});
   const [mcChecked, setMcChecked] = useState({});
-  const [translatingAll, setTranslatingAll] = useState(false);
 
-  // ── Batch translate all question content when translateQuestions is on ──
-  const LANG_MAP = { zh: 'zh-CN', yue: 'yue', ko: 'ko', fr: 'fr', es: 'es', en: 'en', ja: 'ja' };
-  useEffect(() => {
-    if (!translateQuestions || !questions || questions.length === 0) return;
-    const cached = questionTranslations || {};
-
-    // Collect untranslated texts with their cache keys
-    const toTranslate = [];
-    questions.forEach((q, i) => {
-      const qText = typeof q === 'string' ? q : q.text;
-      const qType = (typeof q === 'object' ? q.type : null) || 'fr';
-      if (qText && !cached[`q-${i}`]) toTranslate.push({ key: `q-${i}`, text: qText });
-      if (qType === 'mc' && q.options) {
-        q.options.forEach(opt => {
-          const letter = opt.charAt(0);
-          if (!cached[`opt-${i}-${letter}`]) toTranslate.push({ key: `opt-${i}-${letter}`, text: opt });
-        });
-      }
-      if (qType === 'fb' && q.bank) {
-        q.bank.forEach(word => {
-          if (!cached[`bank-${i}-${word}`]) toTranslate.push({ key: `bank-${i}-${word}`, text: word });
-        });
-      }
-      if (qType === 'vm' && q.pairs) {
-        q.pairs.forEach(p => {
-          if (!cached[`vm-${i}-${p.word}`]) toTranslate.push({ key: `vm-${i}-${p.word}`, text: p.definition });
-        });
-      }
-    });
-
-    if (toTranslate.length === 0) return;
-
-    let cancelled = false;
-    setTranslatingAll(true);
-    const fromLang = LANG_MAP[langId] || langId;
-    const toLang = nativeLang === langId ? 'en' : (nativeLang || 'en');
-
-    batchTranslate(toTranslate.map(t => t.text), { from: fromLang, to: toLang })
-      .then(results => {
-        if (cancelled) return;
-        const newTranslations = {};
-        toTranslate.forEach((item, idx) => {
-          newTranslations[item.key] = results[idx] || '';
-        });
-        onCacheQuestionTranslations?.(newTranslations);
-      })
-      .catch(err => {
-        if (!cancelled) console.warn('[ComprehensionQuestions] Batch translate failed:', err.message);
-      })
-      .finally(() => {
-        if (!cancelled) setTranslatingAll(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [translateQuestions, lessonKey, questions?.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { visibleQTranslations, fetchedQTranslations, translatingQIndex, translatingAll, handleQTranslateClick } = useQuestionTranslation({
+    questions, lessonKey, langId, nativeLang, translateQuestions, questionTranslations, onCacheQuestionTranslations,
+    notify: (type, msg) => act.notify(type, msg),
+  });
 
   // Refs for debounced auto-save — read current values without stale closures
   const debounceRef = useRef(null);
@@ -292,30 +237,6 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
     setResults(null);
     setGradingError(null);
     setMcChecked({});
-  }
-
-  async function handleQTranslateClick(i, qText, qTranslation) {
-    // Toggle off if already visible
-    if (visibleQTranslations.has(i)) {
-      setVisibleQTranslations(prev => { const n = new Set(prev); n.delete(i); return n; });
-      return;
-    }
-    // Show existing translation (from LLM or previous fetch)
-    if (qTranslation || fetchedQTranslations[i]) {
-      setVisibleQTranslations(prev => new Set(prev).add(i));
-      return;
-    }
-    // Fetch via Google Translate
-    setVisibleQTranslations(prev => new Set(prev).add(i));
-    setTranslatingQIndex(i);
-    try {
-      const translation = await translateText(qText, langId, { to: nativeLang });
-      setFetchedQTranslations(prev => ({ ...prev, [i]: translation }));
-    } catch (err) {
-      act.notify('error', `Translation failed: ${err.message}`);
-    } finally {
-      setTranslatingQIndex(null);
-    }
   }
 
   return (

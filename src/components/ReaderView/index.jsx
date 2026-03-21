@@ -368,30 +368,14 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
         storyParagraphs={storyParagraphs}
         pinyinOn={pinyinOn}
         renderChars={renderChars}
-        ttsSupported={ttsSupported}
-        speakingKey={speakingKey}
-        speakText={speakText}
-        lookupVocab={lookupVocab}
-        handleVocabClick={handleVocabClick}
-        activeVocab={activeVocab}
-        popoverRef={popoverRef}
-        getPopoverPosition={getPopoverPosition}
-        paragraphTranslations={reader.paragraphTranslations}
-        onTranslate={handleTranslate}
-        translatingIndex={translatingIndex}
         showParagraphTools={translateButtons}
-        selectionPopover={selectionPopover}
-        selectionPopoverRef={selectionPopoverRef}
         langId={langId}
         nativeLang={nativeLang}
-        sentencePopover={sentencePopover}
-        sentencePopoverRef={sentencePopoverRef}
-        onSentenceClick={handleSentenceClick}
-        onSubSelection={handleSubSelection}
         romanizer={romanizer}
-        onCloseVocab={() => setActiveVocab(null)}
-        onCloseSelection={() => { setSelectionPopover(null); clearSelection(); }}
-        onCloseSentence={closeSentencePopover}
+        ttsProps={{ ttsSupported, speakingKey, speakText }}
+        vocabProps={{ lookupVocab, handleVocabClick, activeVocab, onCloseVocab: () => setActiveVocab(null) }}
+        popoverProps={{ popoverRef, getPopoverPosition, selectionPopover, selectionPopoverRef, sentencePopover, sentencePopoverRef, onSentenceClick: handleSentenceClick, onSubSelection: handleSubSelection, onCloseSelection: () => { setSelectionPopover(null); clearSelection(); }, onCloseSentence: closeSentencePopover }}
+        translationProps={{ paragraphTranslations: reader.paragraphTranslations, onTranslate: handleTranslate, translatingIndex }}
       />
 
       <hr className="divider" />

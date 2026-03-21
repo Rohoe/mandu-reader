@@ -3,8 +3,7 @@
  * Supports Anthropic, OpenAI, OpenAI-compatible, and Gemini providers.
  */
 
-import { createTimeoutController, fetchWithRetry } from './apiUtils';
-import { classifyApiError } from './api';
+import { createTimeoutController, fetchWithRetry, classifyApiError, buildAnthropicHeaders, parseSSEStream } from './apiUtils';
 
 // ── Sliding window ──────────────────────────────────────────
 
@@ -17,12 +16,6 @@ function trimMessages(messages) {
 
 // ── Provider message formatting ─────────────────────────────
 
-const ANTHROPIC_HEADERS = {
-  'Content-Type': 'application/json',
-  'anthropic-version': '2023-06-01',
-  'anthropic-dangerous-direct-browser-access': 'true',
-};
-
 function buildAnthropicChat(apiKey, model, systemPrompt, messages, maxTokens, signal) {
   // Use cache_control on system prompt so it's cached across turns
   const system = systemPrompt
@@ -32,7 +25,7 @@ function buildAnthropicChat(apiKey, model, systemPrompt, messages, maxTokens, si
     url: 'https://api.anthropic.com/v1/messages',
     options: {
       method: 'POST',
-      headers: { ...ANTHROPIC_HEADERS, 'x-api-key': apiKey },
+      headers: buildAnthropicHeaders(apiKey),
       body: JSON.stringify({
         model,
         max_tokens: maxTokens,
@@ -159,7 +152,7 @@ export async function* callLLMChatStream(llmConfig, systemPrompt, messages, maxT
       : undefined;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { ...ANTHROPIC_HEADERS, 'x-api-key': apiKey },
+      headers: buildAnthropicHeaders(apiKey),
       body: JSON.stringify({
         model,
         max_tokens: maxTokens,
@@ -181,34 +174,7 @@ export async function* callLLMChatStream(llmConfig, systemPrompt, messages, maxT
       throw new Error(classifyApiError(rawErr, model));
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6);
-          if (data === '[DONE]') return;
-          try {
-            const event = JSON.parse(data);
-            if (event.type === 'content_block_delta' && event.delta?.text) {
-              yield event.delta.text;
-            }
-          } catch { /* skip non-JSON lines */ }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    yield* parseSSEStream(response);
   } finally {
     cleanup();
   }

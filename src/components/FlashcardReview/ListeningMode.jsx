@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useT } from '../../i18n';
+import { useFlashcardKeyboard } from '../../hooks/useFlashcardKeyboard';
 
 /**
  * Listening quiz mode.
@@ -70,17 +71,7 @@ export default function ListeningMode({ cards, onJudge, onClose, speakText, sing
     setHintRevealed(false);
   }, [singleCard, onComplete]);
 
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') { onClose?.(); return; }
-      if (revealed && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        handleNext();
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [revealed, handleNext, onClose]);
+  useFlashcardKeyboard({ onClose, onNext: handleNext, enabled: revealed });
 
   if (activeCards.length === 0) {
     return (

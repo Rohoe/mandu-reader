@@ -12,41 +12,11 @@ import { buildSyllabusPrompt } from '../prompts/syllabusPrompt';
 import { buildReaderSystem } from '../prompts/readerSystemPrompt';
 import { buildGradingSystem } from '../prompts/gradingPrompt';
 import { buildExtendSyllabusPrompt } from '../prompts/extendSyllabusPrompt';
-import { createTimeoutController, parseJSONWithFallback, fetchWithRetry, isRetryable } from './apiUtils';
+import { createTimeoutController, parseJSONWithFallback, fetchWithRetry, isRetryable, classifyApiError, buildAnthropicHeaders, parseSSEStream } from './apiUtils';
 
-export { isRetryable };
-
-// ── Error classification ──────────────────────────────────────
-
-/**
- * Rewrites raw API errors into actionable user-facing messages.
- * Returns the original message if no classification matches.
- */
-export function classifyApiError(err, model) {
-  const status = err.status;
-  const msg = (err.message || '').toLowerCase();
-
-  if (status === 404 && (msg.includes('model') || msg.includes('not_found') || msg.includes('not found'))) {
-    return `Model "${model}" is not available. Check the model in Settings or switch to a different one.`;
-  }
-  if (status === 401 || status === 403) {
-    return 'Invalid API key. Check your key in Settings.';
-  }
-  return err.message;
-}
+export { isRetryable, classifyApiError };
 
 // ── Provider config registry ─────────────────────────────────
-
-const ANTHROPIC_HEADERS = {
-  'Content-Type': 'application/json',
-  'x-api-key': null,          // placeholder, set per-request
-  'anthropic-version': '2023-06-01',
-  'anthropic-dangerous-direct-browser-access': 'true',
-};
-
-function buildAnthropicHeaders(apiKey) {
-  return { ...ANTHROPIC_HEADERS, 'x-api-key': apiKey };
-}
 
 /**
  * Provider registry: maps provider ID → { buildRequest, extractText, buildStructuredRequest, extractStructuredText }
@@ -285,34 +255,7 @@ async function* callAnthropicStream(apiKey, model, systemPrompt, userMessage, ma
     throw new Error(classifyApiError(rawErr, model));
   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete line in buffer
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') return;
-        try {
-          const event = JSON.parse(data);
-          if (event.type === 'content_block_delta' && event.delta?.text) {
-            yield event.delta.text;
-          }
-        } catch { /* skip non-JSON lines */ }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
+  yield* parseSSEStream(response);
 }
 
 // ── Shared reader message builder ─────────────────────────────

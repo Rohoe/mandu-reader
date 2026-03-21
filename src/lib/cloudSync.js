@@ -1,5 +1,14 @@
 import { supabase } from './supabase';
 
+/**
+ * Returns the authenticated Supabase user, or throws if not signed in.
+ */
+async function getAuthUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  return user;
+}
+
 export async function signInWithGoogle() {
   return supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -21,8 +30,7 @@ export async function signOut() {
 // Pushes all metadata (syllabi, progress, vocab, etc.) — excludes readers.
 // Readers are pushed individually via pushReaderToCloud when generated.
 export async function pushToCloud(state) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  const user = await getAuthUser();
   const { error } = await supabase.from('user_data').upsert({
     user_id:            user.id,
     syllabi:            state.syllabi,
@@ -46,8 +54,7 @@ export function pushReaderToCloud(lessonKey, readerData) {
 }
 
 async function _pushReaderToCloudImpl(lessonKey, readerData) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  const user = await getAuthUser();
   const { data } = await supabase
     .from('user_data')
     .select('generated_readers')
@@ -63,8 +70,7 @@ async function _pushReaderToCloudImpl(lessonKey, readerData) {
 }
 
 export async function pullFromCloud() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  const user = await getAuthUser();
   const { data, error } = await supabase
     .from('user_data')
     .select('*')
@@ -76,8 +82,8 @@ export async function pullFromCloud() {
 
 // Fetch just the reader keys from cloud (for eviction verification)
 export async function fetchCloudReaderKeys() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  let user;
+  try { user = await getAuthUser(); } catch { return null; }
   const { data, error } = await supabase
     .from('user_data')
     .select('generated_readers')
@@ -92,8 +98,8 @@ export async function fetchCloudReaderKeys() {
 
 // Pull a single reader from cloud by lesson key
 export async function pullReaderFromCloud(lessonKey) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  let user;
+  try { user = await getAuthUser(); } catch { return null; }
   const { data, error } = await supabase
     .from('user_data')
     .select('generated_readers')
@@ -271,8 +277,7 @@ export function computeMergeSummary(preState, postMerged) {
 
 // Push pre-merged data to cloud (includes generated_readers).
 export async function pushMergedToCloud(mergedData) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  const user = await getAuthUser();
   const { error } = await supabase.from('user_data').upsert({
     user_id:            user.id,
     syllabi:            mergedData.syllabi,

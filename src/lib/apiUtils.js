@@ -4,6 +4,74 @@
 
 const DEFAULT_TIMEOUT_MS = 300_000;
 
+// ── Shared Anthropic config ─────────────────────────────────────
+
+const ANTHROPIC_HEADERS = {
+  'Content-Type': 'application/json',
+  'anthropic-version': '2023-06-01',
+  'anthropic-dangerous-direct-browser-access': 'true',
+};
+
+export function buildAnthropicHeaders(apiKey) {
+  return { ...ANTHROPIC_HEADERS, 'x-api-key': apiKey };
+}
+
+// ── Error classification ────────────────────────────────────────
+
+/**
+ * Rewrites raw API errors into actionable user-facing messages.
+ * Returns the original message if no classification matches.
+ */
+export function classifyApiError(err, model) {
+  const status = err.status;
+  const msg = (err.message || '').toLowerCase();
+
+  if (status === 404 && (msg.includes('model') || msg.includes('not_found') || msg.includes('not found'))) {
+    return `Model "${model}" is not available. Check the model in Settings or switch to a different one.`;
+  }
+  if (status === 401 || status === 403) {
+    return 'Invalid API key. Check your key in Settings.';
+  }
+  return err.message;
+}
+
+// ── Shared SSE stream parser ────────────────────────────────────
+
+/**
+ * Async generator that reads an SSE response body and yields
+ * Anthropic content_block_delta text chunks.
+ */
+export async function* parseSSEStream(response) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') return;
+        try {
+          const event = JSON.parse(data);
+          if (event.type === 'content_block_delta' && event.delta?.text) {
+            yield event.delta.text;
+          }
+        } catch { /* skip non-JSON lines */ }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export function isRetryable(status) {
   return status >= 500 || status === 429;
 }
