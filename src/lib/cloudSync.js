@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { DEMO_READER_KEYS } from './demoReader';
 
 /**
  * Returns the authenticated Supabase user, or throws if not signed in.
@@ -31,11 +32,13 @@ export async function signOut() {
 // Readers are pushed individually via pushReaderToCloud when generated.
 export async function pushToCloud(state) {
   const user = await getAuthUser();
+  // Filter out demo/sample readers so they never get synced to cloud
+  const standaloneReaders = (state.standaloneReaders || []).filter(r => !r.isDemo && !DEMO_READER_KEYS.has(r.key));
   const { error } = await supabase.from('user_data').upsert({
     user_id:            user.id,
     syllabi:            state.syllabi,
     syllabus_progress:  state.syllabusProgress,
-    standalone_readers: state.standaloneReaders,
+    standalone_readers: standaloneReaders,
     learned_vocabulary: state.learnedVocabulary,
     learned_grammar:    state.learnedGrammar,
     exported_words:     [...state.exportedWords],
@@ -181,10 +184,14 @@ export function mergeData(localState, cloudData) {
   for (const s of (localState.syllabi || [])) syllabusMap.set(s.id, s); // local wins on conflict
   const syllabi = [...syllabusMap.values()];
 
-  // Standalone readers: union by key
+  // Standalone readers: union by key (exclude demo/sample readers)
   const standaloneMap = new Map();
-  for (const r of (cloudData.standalone_readers || [])) standaloneMap.set(r.key, r);
-  for (const r of (localState.standaloneReaders || [])) standaloneMap.set(r.key, r);
+  for (const r of (cloudData.standalone_readers || [])) {
+    if (!DEMO_READER_KEYS.has(r.key)) standaloneMap.set(r.key, r);
+  }
+  for (const r of (localState.standaloneReaders || [])) {
+    if (!r.isDemo && !DEMO_READER_KEYS.has(r.key)) standaloneMap.set(r.key, r);
+  }
   const standalone_readers = [...standaloneMap.values()];
 
   // Syllabus progress: union by syllabus ID; merge completedLessons + max lessonIndex
@@ -203,9 +210,16 @@ export function mergeData(localState, cloudData) {
   }
 
   // Generated readers: union by lesson key; local wins (has user answers, grading)
+  // Exclude demo reader keys from merge
+  const cloudGenerated = { ...(cloudData.generated_readers || {}) };
+  const localGenerated = { ...(localState.generatedReaders || {}) };
+  for (const key of DEMO_READER_KEYS) {
+    delete cloudGenerated[key];
+    delete localGenerated[key];
+  }
   const generated_readers = {
-    ...(cloudData.generated_readers || {}),
-    ...(localState.generatedReaders || {}),
+    ...cloudGenerated,
+    ...localGenerated,
   };
 
   // Learned vocabulary: union by word; prefer newer dateAdded
@@ -278,12 +292,16 @@ export function computeMergeSummary(preState, postMerged) {
 // Push pre-merged data to cloud (includes generated_readers).
 export async function pushMergedToCloud(mergedData) {
   const user = await getAuthUser();
+  // Filter out demo/sample readers before pushing to cloud
+  const standaloneReaders = (mergedData.standalone_readers || []).filter(r => !r.isDemo && !DEMO_READER_KEYS.has(r.key));
+  const generatedReaders = { ...(mergedData.generated_readers || {}) };
+  for (const key of DEMO_READER_KEYS) delete generatedReaders[key];
   const { error } = await supabase.from('user_data').upsert({
     user_id:            user.id,
     syllabi:            mergedData.syllabi,
     syllabus_progress:  mergedData.syllabus_progress,
-    standalone_readers: mergedData.standalone_readers,
-    generated_readers:  mergedData.generated_readers,
+    standalone_readers: standaloneReaders,
+    generated_readers:  generatedReaders,
     learned_vocabulary: mergedData.learned_vocabulary,
     learned_grammar:    mergedData.learned_grammar,
     exported_words:     mergedData.exported_words,

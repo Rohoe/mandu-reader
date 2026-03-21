@@ -13,6 +13,7 @@ vi.mock('./supabase', () => ({
 }));
 
 import { detectConflict, mergeData } from './cloudSync';
+import { DEMO_READER_KEY, DEMO_READER_EN_KEY } from './demoReader';
 
 // ── detectConflict ──────────────────────────────────────────
 
@@ -319,6 +320,95 @@ describe('mergeData', () => {
     // Cloud is newer, so cloud wins
     expect(result.learned_vocabulary['猫'].english).toBe('cat (cloud)');
     expect(result.learned_vocabulary['猫'].dateAdded).toBe(3000);
+  });
+
+  it('excludes demo readers from standalone_readers merge', () => {
+    const localState = {
+      syllabi: [],
+      syllabusProgress: {},
+      standaloneReaders: [
+        { key: DEMO_READER_KEY, topic: 'demo-zh', isDemo: true },
+        { key: DEMO_READER_EN_KEY, topic: 'demo-en', isDemo: true },
+        { key: 'sr1', topic: 'real-reader' },
+      ],
+      generatedReaders: {},
+      learnedVocabulary: {},
+      exportedWords: new Set(),
+    };
+    const cloudData = {
+      syllabi: [],
+      syllabus_progress: {},
+      standalone_readers: [{ key: 'sr2', topic: 'cloud-reader' }],
+      generated_readers: {},
+      learned_vocabulary: {},
+      exported_words: [],
+    };
+    const result = mergeData(localState, cloudData);
+    expect(result.standalone_readers.length).toBe(2);
+    expect(result.standalone_readers.find(r => r.key === 'sr1')).toBeTruthy();
+    expect(result.standalone_readers.find(r => r.key === 'sr2')).toBeTruthy();
+    expect(result.standalone_readers.find(r => r.key === DEMO_READER_KEY)).toBeFalsy();
+    expect(result.standalone_readers.find(r => r.key === DEMO_READER_EN_KEY)).toBeFalsy();
+  });
+
+  it('excludes demo readers from generated_readers merge', () => {
+    const localState = {
+      syllabi: [],
+      syllabusProgress: {},
+      standaloneReaders: [],
+      generatedReaders: {
+        [DEMO_READER_KEY]: { story: 'demo story' },
+        key1: { story: 'real story' },
+      },
+      learnedVocabulary: {},
+      exportedWords: new Set(),
+    };
+    const cloudData = {
+      syllabi: [],
+      syllabus_progress: {},
+      standalone_readers: [],
+      generated_readers: {
+        [DEMO_READER_EN_KEY]: { story: 'demo en story' },
+        key2: { story: 'cloud story' },
+      },
+      learned_vocabulary: {},
+      exported_words: [],
+    };
+    const result = mergeData(localState, cloudData);
+    expect(Object.keys(result.generated_readers).length).toBe(2);
+    expect(result.generated_readers.key1).toBeTruthy();
+    expect(result.generated_readers.key2).toBeTruthy();
+    expect(result.generated_readers[DEMO_READER_KEY]).toBeUndefined();
+    expect(result.generated_readers[DEMO_READER_EN_KEY]).toBeUndefined();
+  });
+
+  it('excludes demo readers that leaked into cloud data', () => {
+    const localState = {
+      syllabi: [],
+      syllabusProgress: {},
+      standaloneReaders: [],
+      generatedReaders: {},
+      learnedVocabulary: {},
+      exportedWords: new Set(),
+    };
+    const cloudData = {
+      syllabi: [],
+      syllabus_progress: {},
+      standalone_readers: [
+        { key: DEMO_READER_KEY, topic: 'leaked demo' },
+        { key: 'sr1', topic: 'real' },
+      ],
+      generated_readers: {
+        [DEMO_READER_KEY]: { story: 'leaked' },
+        key1: { story: 'real' },
+      },
+      learned_vocabulary: {},
+      exported_words: [],
+    };
+    const result = mergeData(localState, cloudData);
+    expect(result.standalone_readers.length).toBe(1);
+    expect(result.standalone_readers[0].key).toBe('sr1');
+    expect(Object.keys(result.generated_readers)).toEqual(['key1']);
   });
 
   it('merges syllabus progress with max lessonIndex and union completedLessons', () => {
