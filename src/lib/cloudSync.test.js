@@ -23,14 +23,12 @@ describe('detectConflict', () => {
   });
 
   it('returns null when data hashes match', () => {
-    // hashData uses local field names (syllabusProgress, standaloneReaders, etc.)
-    // for local, and cloud field names (syllabus_progress, standalone_readers) for cloud
-    // Both sides must produce same JSON to hash equal
     const localState = {
       syllabi: [],
       syllabusProgress: {},
       standaloneReaders: [],
       learnedVocabulary: {},
+      learnedGrammar: {},
       exportedWords: new Set(),
       lastModified: 1000,
     };
@@ -39,7 +37,57 @@ describe('detectConflict', () => {
       syllabus_progress: {},
       standalone_readers: [],
       learned_vocabulary: {},
-      exported_words: new Set(),
+      learned_grammar: {},
+      exported_words: [],
+      updated_at: new Date(1000).toISOString(),
+    };
+    const result = detectConflict(localState, cloudData);
+    expect(result).toBeNull();
+  });
+
+  it('returns null when exportedWords Set matches cloud Array (regression)', () => {
+    const localState = {
+      syllabi: [],
+      syllabusProgress: {},
+      standaloneReaders: [],
+      learnedVocabulary: {},
+      learnedGrammar: {},
+      exportedWords: new Set(['猫', '狗']),
+      lastModified: 1000,
+    };
+    const cloudData = {
+      syllabi: [],
+      syllabus_progress: {},
+      standalone_readers: [],
+      learned_vocabulary: {},
+      learned_grammar: {},
+      exported_words: ['猫', '狗'],
+      updated_at: new Date(1000).toISOString(),
+    };
+    const result = detectConflict(localState, cloudData);
+    expect(result).toBeNull();
+  });
+
+  it('ignores demo readers when comparing hashes', () => {
+    const localState = {
+      syllabi: [],
+      syllabusProgress: {},
+      standaloneReaders: [
+        { key: 'standalone_demo', topic: 'Demo', isDemo: true },
+        { key: 'standalone_demo_en', topic: 'Demo EN', isDemo: true },
+      ],
+      learnedVocabulary: {},
+      learnedGrammar: {},
+      exportedWords: new Set(),
+      lastModified: 1000,
+    };
+    const cloudData = {
+      syllabi: [],
+      syllabus_progress: {},
+      standalone_readers: [],
+      learned_vocabulary: {},
+      learned_grammar: {},
+      exported_words: [],
       updated_at: new Date(1000).toISOString(),
     };
     const result = detectConflict(localState, cloudData);
@@ -358,6 +406,33 @@ describe('mergeData', () => {
     expect(result.generated_readers).toHaveProperty('sr2');
     expect(result.generated_readers).not.toHaveProperty('standalone_demo');
     expect(result.generated_readers).not.toHaveProperty('standalone_demo_en');
+  });
+
+  it('cloud wins on conflict when prefer: cloud', () => {
+    const localState = {
+      syllabi: [{ id: 's1', topic: 'local-topic' }],
+      syllabusProgress: {},
+      standaloneReaders: [{ key: 'sr1', topic: 'local-reader' }],
+      generatedReaders: { key1: { story: 'local-story' } },
+      learnedVocabulary: {},
+      exportedWords: new Set(),
+    };
+    const cloudData = {
+      syllabi: [{ id: 's1', topic: 'cloud-topic' }, { id: 's2', topic: 'cloud-only' }],
+      syllabus_progress: {},
+      standalone_readers: [{ key: 'sr1', topic: 'cloud-reader' }],
+      generated_readers: { key1: { story: 'cloud-story' }, key2: { story: 'cloud-only' } },
+      learned_vocabulary: {},
+      exported_words: [],
+    };
+    const result = mergeData(localState, cloudData, { prefer: 'cloud' });
+    // Cloud wins for overlapping items
+    expect(result.syllabi.find(s => s.id === 's1').topic).toBe('cloud-topic');
+    expect(result.standalone_readers.find(r => r.key === 'sr1').topic).toBe('cloud-reader');
+    expect(result.generated_readers.key1.story).toBe('cloud-story');
+    // Union still includes cloud-only items
+    expect(result.syllabi.find(s => s.id === 's2')).toBeTruthy();
+    expect(result.generated_readers.key2.story).toBe('cloud-only');
   });
 
   it('merges syllabus progress with max lessonIndex and union completedLessons', () => {

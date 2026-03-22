@@ -137,8 +137,8 @@ export default function Settings({ onClose }) {
         act.notify('error', t('notify.noCloudData'));
         return;
       }
-      // Merge cloud data with local (additive, no data loss)
-      const merged = mergeData(state, cloudData);
+      // Merge cloud data with local — cloud wins since user explicitly pulled
+      const merged = mergeData(state, cloudData, { prefer: 'cloud' });
       dispatch({ type: MERGE_WITH_CLOUD, payload: merged });
       await pushMergedToCloud(merged);
       act.setCloudLastSynced(Date.now());

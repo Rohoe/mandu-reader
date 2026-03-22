@@ -135,22 +135,25 @@ function hashData(data) {
 export function detectConflict(localState, cloudData) {
   if (!cloudData) return null; // No cloud data, no conflict
 
+  // Normalize both sides before hashing:
+  // - exportedWords: local is Set, cloud is Array — convert both to sorted arrays
+  // - standaloneReaders: local may include demo readers filtered out of cloud by pushToCloud
   const localHash = hashData({
     syllabi: localState.syllabi,
     syllabusProgress: localState.syllabusProgress,
-    standaloneReaders: localState.standaloneReaders,
+    standaloneReaders: (localState.standaloneReaders || []).filter(r => !r.isDemo && !DEMO_READER_KEYS.has(r.key)),
     learnedVocabulary: localState.learnedVocabulary,
     learnedGrammar: localState.learnedGrammar,
-    exportedWords: localState.exportedWords,
+    exportedWords: [...(localState.exportedWords || [])].sort(),
   });
 
   const cloudHash = hashData({
     syllabi: cloudData.syllabi,
     syllabusProgress: cloudData.syllabus_progress,
-    standaloneReaders: cloudData.standalone_readers,
+    standaloneReaders: (cloudData.standalone_readers || []).filter(r => !r.isDemo && !DEMO_READER_KEYS.has(r.key)),
     learnedVocabulary: cloudData.learned_vocabulary,
     learnedGrammar: cloudData.learned_grammar,
-    exportedWords: cloudData.exported_words,
+    exportedWords: [...(cloudData.exported_words || [])].sort(),
   });
 
   if (localHash === cloudHash) return null; // Data is identical
@@ -175,19 +178,28 @@ export function detectConflict(localState, cloudData) {
 
 // Union-merge local state and cloud data. Returns cloud-row shaped data
 // suitable for HYDRATE_FROM_CLOUD / MERGE_WITH_CLOUD.
-export function mergeData(localState, cloudData) {
-  // Syllabi: union by id
+// prefer: 'local' (default) or 'cloud' — controls which side wins on conflict
+export function mergeData(localState, cloudData, { prefer = 'local' } = {}) {
+  const cloudWins = prefer === 'cloud';
+
+  // Syllabi: union by id — preferred side inserted last so it wins on conflict
   const syllabusMap = new Map();
-  for (const s of (cloudData.syllabi || [])) syllabusMap.set(s.id, s);
-  for (const s of (localState.syllabi || [])) syllabusMap.set(s.id, s); // local wins on conflict
+  const [syllFirst, syllSecond] = cloudWins
+    ? [localState.syllabi || [], cloudData.syllabi || []]
+    : [cloudData.syllabi || [], localState.syllabi || []];
+  for (const s of syllFirst) syllabusMap.set(s.id, s);
+  for (const s of syllSecond) syllabusMap.set(s.id, s);
   const syllabi = [...syllabusMap.values()];
 
   // Standalone readers: union by key (exclude demo readers)
   const standaloneMap = new Map();
-  for (const r of (cloudData.standalone_readers || [])) {
+  const [srFirst, srSecond] = cloudWins
+    ? [localState.standaloneReaders || [], cloudData.standalone_readers || []]
+    : [cloudData.standalone_readers || [], localState.standaloneReaders || []];
+  for (const r of srFirst) {
     if (!r.isDemo && !DEMO_READER_KEYS.has(r.key)) standaloneMap.set(r.key, r);
   }
-  for (const r of (localState.standaloneReaders || [])) {
+  for (const r of srSecond) {
     if (!r.isDemo && !DEMO_READER_KEYS.has(r.key)) standaloneMap.set(r.key, r);
   }
   const standalone_readers = [...standaloneMap.values()];
@@ -207,13 +219,16 @@ export function mergeData(localState, cloudData) {
     }
   }
 
-  // Generated readers: union by lesson key; local wins (has user answers, grading)
+  // Generated readers: union by lesson key; preferred side wins
   // Exclude demo reader content from cloud sync
   const generated_readers = {};
-  for (const [k, v] of Object.entries(cloudData.generated_readers || {})) {
+  const [grFirst, grSecond] = cloudWins
+    ? [localState.generatedReaders || {}, cloudData.generated_readers || {}]
+    : [cloudData.generated_readers || {}, localState.generatedReaders || {}];
+  for (const [k, v] of Object.entries(grFirst)) {
     if (!DEMO_READER_KEYS.has(k)) generated_readers[k] = v;
   }
-  for (const [k, v] of Object.entries(localState.generatedReaders || {})) {
+  for (const [k, v] of Object.entries(grSecond)) {
     if (!DEMO_READER_KEYS.has(k)) generated_readers[k] = v;
   }
 

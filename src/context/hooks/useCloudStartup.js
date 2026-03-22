@@ -39,12 +39,14 @@ export function useCloudStartup(state, dispatch, stateRef, startupSyncDoneRef, s
                 syllabusProgress: preState.syllabusProgress,
                 standaloneReaders: preState.standaloneReaders,
                 learnedVocabulary: preState.learnedVocabulary,
+                learnedGrammar: preState.learnedGrammar,
                 exportedWords: [...preState.exportedWords],
               },
             };
             localStorage.setItem('gradedReader_preMergeSnapshot', JSON.stringify(snapshot));
 
-            const merged = mergeData(preState, data);
+            const prefer = conflict.cloudNewer ? 'cloud' : 'local';
+            const merged = mergeData(preState, data, { prefer });
             dispatch({ type: MERGE_WITH_CLOUD, payload: merged });
             pushMergedToCloud(merged).catch(e => console.warn('[AppContext] Post-merge push failed:', e));
             dispatch({ type: SET_CLOUD_LAST_SYNCED, payload: Date.now() });
