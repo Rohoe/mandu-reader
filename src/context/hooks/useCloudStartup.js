@@ -45,8 +45,10 @@ export function useCloudStartup(state, dispatch, stateRef, startupSyncDoneRef, s
             };
             localStorage.setItem('gradedReader_preMergeSnapshot', JSON.stringify(snapshot));
 
-            const prefer = conflict.cloudNewer ? 'cloud' : 'local';
-            const merged = mergeData(preState, data, { prefer });
+            // Always prefer cloud on startup — it's the shared state between
+            // devices and the auto-push (3s debounce) ensures local changes reach
+            // cloud quickly. The merge snapshot allows undo if needed.
+            const merged = mergeData(preState, data, { prefer: 'cloud' });
             dispatch({ type: MERGE_WITH_CLOUD, payload: merged });
             pushMergedToCloud(merged).catch(e => console.warn('[AppContext] Post-merge push failed:', e));
             dispatch({ type: SET_CLOUD_LAST_SYNCED, payload: Date.now() });
