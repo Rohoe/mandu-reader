@@ -12,6 +12,13 @@ export function buildReaderSystem(langConfig, level, topic, charRange, targetCha
   const grammarRange = targetChars <= 250 ? '1-2' : '3-5';
   const minAppearances = 1;
 
+  // Scale comprehension question difficulty by proficiency level
+  const questionDifficulty = level <= 2
+    ? `Questions should test basic comprehension: direct factual recall from the story, simple true/false statements, and vocabulary recognition. Answers should be clearly and explicitly stated in the text.`
+    : level <= 4
+    ? `Questions should mix factual recall with some inferential thinking: include 1-2 questions that require the reader to combine information from different parts of the story, understand cause-and-effect, or infer a character's motivation. Not every answer should be a word-for-word quote from the text.`
+    : `Questions should emphasize higher-order thinking: inference, synthesis, and interpretation. Most questions should require the reader to read between the lines — e.g. infer unstated motivations, draw conclusions from context, evaluate a character's decision, or identify the theme/message. Avoid questions where the answer is a verbatim phrase from the text. At most 1 question should be simple factual recall.`;
+
   return `Create an educational graded reader in ${p.targetLanguage} for ${profName} ${level} learners.
 
 CRITICAL: Follow the exact section format below. Never omit sections or change heading numbering.
@@ -56,6 +63,7 @@ Do NOT prefix example sentences with labels like "Example:" — just write the s
 ${questionRange} questions in ${p.targetLanguage} at the target level.
 Default mix: ~2 multiple-choice, 1 true/false, 1 fill-in-the-blank, 1 vocabulary matching.
 All questions are auto-graded — do NOT use free-response.
+${questionDifficulty}
 
 For multiple-choice questions, use EXACTLY this format:
 [MC] Question text?

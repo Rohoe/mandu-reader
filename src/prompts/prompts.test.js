@@ -82,6 +82,33 @@ describe('buildReaderSystem', () => {
     expect(prompt).toContain('TOPIK 2');
     expect(prompt).toContain('Korean syllables');
   });
+
+  it('uses basic comprehension for beginner levels (0-2)', () => {
+    for (const level of [0, 1, 2]) {
+      const prompt = buildReaderSystem(zhConfig, level, 'Test', '500-700', 600);
+      expect(prompt).toContain('direct factual recall');
+      expect(prompt).toContain('explicitly stated in the text');
+      expect(prompt).not.toContain('higher-order thinking');
+    }
+  });
+
+  it('uses inferential questions for intermediate levels (3-4)', () => {
+    for (const level of [3, 4]) {
+      const prompt = buildReaderSystem(zhConfig, level, 'Test', '500-700', 600);
+      expect(prompt).toContain('inferential thinking');
+      expect(prompt).toContain('cause-and-effect');
+      expect(prompt).not.toContain('direct factual recall');
+    }
+  });
+
+  it('uses higher-order thinking for advanced levels (5-6)', () => {
+    for (const level of [5, 6]) {
+      const prompt = buildReaderSystem(zhConfig, level, 'Test', '500-700', 600);
+      expect(prompt).toContain('higher-order thinking');
+      expect(prompt).toContain('inference, synthesis, and interpretation');
+      expect(prompt).not.toContain('direct factual recall');
+    }
+  });
 });
 
 // ── buildGradingSystem ──────────────────────────────────────
