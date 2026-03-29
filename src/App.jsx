@@ -4,7 +4,7 @@ import { useAppSelector } from './context/useAppSelector';
 import { actions } from './context/actions';
 import { useT } from './i18n';
 import { CLEAR_NOTIFICATION } from './context/actionTypes';
-import { generateReader, extendSyllabus } from './lib/api';
+import { generateReader, extendSyllabus, extendNarrativeSyllabus } from './lib/api';
 import { buildLLMConfig } from './lib/llmConfig';
 import { loadLastSession, saveLastSession } from './lib/storage';
 import { parseReaderResponse, normalizeStructuredReader } from './lib/parser';
@@ -289,17 +289,27 @@ function AppShell() {
     act.setLoading(true, t('notify.expanding'));
     try {
       const llmConfig = buildLLMConfig(state);
-      const { lessons: newLessons } = await extendSyllabus(
-        llmConfig,
-        currentSyllabus.topic,
-        currentSyllabus.level,
-        currentSyllabus.lessons,
-        additionalCount,
-        currentSyllabus.langId,
-        state.nativeLang,
-      );
-      act.extendSyllabusLessons(activeSyllabusId, newLessons);
-      act.notify('success', t('notify.syllabusExtended', { count: newLessons.length }));
+      if (currentSyllabus.type === 'narrative') {
+        const segmentsToConsume = currentSyllabus.futureArc?.segments?.length
+          ? Math.ceil(additionalCount / 5)
+          : 0;
+        const { lessons: newLessons } = await extendNarrativeSyllabus(
+          llmConfig, currentSyllabus, additionalCount, state.nativeLang,
+        );
+        act.extendSyllabusLessons(activeSyllabusId, newLessons, segmentsToConsume || undefined);
+      } else {
+        const { lessons: newLessons } = await extendSyllabus(
+          llmConfig,
+          currentSyllabus.topic,
+          currentSyllabus.level,
+          currentSyllabus.lessons,
+          additionalCount,
+          currentSyllabus.langId,
+          state.nativeLang,
+        );
+        act.extendSyllabusLessons(activeSyllabusId, newLessons);
+      }
+      act.notify('success', t('notify.syllabusExtended', { count: additionalCount }));
     } catch (err) {
       act.notify('error', t('notify.syllabusExtendFailed', { error: err.message.slice(0, 80) }));
     } finally {

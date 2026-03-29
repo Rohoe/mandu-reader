@@ -17,7 +17,7 @@ export function actions(dispatch) {
     // Syllabi
     addSyllabus:           s      => dispatch({ type: T.ADD_SYLLABUS, payload: s }),
     removeSyllabus:        id     => dispatch({ type: T.REMOVE_SYLLABUS, payload: id }),
-    extendSyllabusLessons: (id, newLessons) => dispatch({ type: T.EXTEND_SYLLABUS_LESSONS, payload: { id, newLessons } }),
+    extendSyllabusLessons: (id, newLessons, consumeSegments) => dispatch({ type: T.EXTEND_SYLLABUS_LESSONS, payload: { id, newLessons, consumeSegments } }),
     setLessonIndex:        (syllabusId, lessonIndex) => dispatch({ type: T.SET_LESSON_INDEX, payload: { syllabusId, lessonIndex } }),
     markLessonComplete:    (syllabusId, lessonIndex) => dispatch({ type: T.MARK_LESSON_COMPLETE, payload: { syllabusId, lessonIndex } }),
     unmarkLessonComplete:  (syllabusId, lessonIndex) => dispatch({ type: T.UNMARK_LESSON_COMPLETE, payload: { syllabusId, lessonIndex } }),

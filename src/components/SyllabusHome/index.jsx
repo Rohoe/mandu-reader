@@ -97,6 +97,11 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
         <div className="syllabus-home__title-row">
           <h1 className="syllabus-home__topic font-display">{topic}</h1>
           <span className="syllabus-home__level-badge">{langConfig.proficiency.name} {level}</span>
+          {syllabus.type === 'narrative' && (
+            <span className="syllabus-home__narrative-badge">
+              {syllabus.narrativeType === 'historical' ? t('narrative.historicalDeepDive') : t('narrative.bookAbridgement')}
+            </span>
+          )}
         </div>
         {createdDate && (
           <p className="syllabus-home__date text-muted">{t('syllabusHome.created', { date: createdDate })}</p>
@@ -119,6 +124,61 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
           <h2 className="syllabus-home__section-title">{t('syllabusHome.summary')}</h2>
           <p className="syllabus-home__summary">{summary}</p>
         </section>
+      )}
+
+      {/* ── Source material (narrative) ──────────── */}
+      {syllabus.type === 'narrative' && syllabus.sourceMaterial && (
+        <div className="syllabus-home__source-material">
+          <h4>{t('narrative.sourceMaterial')}</h4>
+          <p className="syllabus-home__source-title">{syllabus.sourceMaterial.title}</p>
+          {syllabus.sourceMaterial.author && <p className="syllabus-home__source-author">{syllabus.sourceMaterial.author}</p>}
+          {syllabus.sourceMaterial.period && <p className="syllabus-home__source-period">{syllabus.sourceMaterial.period}</p>}
+        </div>
+      )}
+
+      {/* ── Characters (narrative) ────────────── */}
+      {syllabus.type === 'narrative' && syllabus.narrativeArc?.characters?.length > 0 && (
+        <details className="syllabus-home__characters">
+          <summary>{t('narrative.characters')} ({syllabus.narrativeArc.characters.length})</summary>
+          <ul className="syllabus-home__character-list">
+            {syllabus.narrativeArc.characters.map((c, i) => (
+              <li key={i}><strong>{c.name}</strong> — {c.role}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {/* ── Story arc visualization (narrative) ── */}
+      {syllabus.type === 'narrative' && (
+        <div className="syllabus-home__arc-viz">
+          <h4>{t('narrative.storyArc')}</h4>
+          <div className="syllabus-home__arc-bar">
+            {syllabus.lessons.map((lesson, i) => {
+              const pos = lesson.narrative_position || 'core';
+              const isComplete = completedSet.has(i);
+              const isCurrent = progress?.lessonIndex === i;
+              return (
+                <div
+                  key={i}
+                  className={`syllabus-home__arc-segment syllabus-home__arc-segment--${pos}${isComplete ? ' completed' : ''}${isCurrent ? ' current' : ''}`}
+                  title={`${i + 1}. ${lesson.title_en || ''} (${pos})`}
+                />
+              );
+            })}
+            {syllabus.futureArc?.segments?.map((seg, i) => (
+              <div
+                key={`future-${i}`}
+                className="syllabus-home__arc-segment syllabus-home__arc-segment--future"
+                title={`${seg.arc_phase}: ${seg.summary}`}
+              />
+            ))}
+          </div>
+          <div className="syllabus-home__arc-labels">
+            <span>{t('narrative.setup')}</span>
+            <span>{t('narrative.climax')}</span>
+            <span>{t('narrative.resolution')}</span>
+          </div>
+        </div>
       )}
 
       {/* ── Lessons ────────────────────────────── */}
@@ -151,8 +211,18 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
                     {isCompleted ? '✓' : idx + 1}
                   </span>
                   <span className="syllabus-home__lesson-titles">
-                    <span className="syllabus-home__lesson-zh text-target">{getLessonTitle(lesson, langId)}</span>
+                    <span className="syllabus-home__lesson-zh text-target">
+                      {getLessonTitle(lesson, langId)}
+                      {syllabus.type === 'narrative' && lesson.narrative_position && (
+                        <span className={`syllabus-home__position-badge syllabus-home__position-badge--${lesson.narrative_position}`}>
+                          {lesson.narrative_position}
+                        </span>
+                      )}
+                    </span>
                     <span className="syllabus-home__lesson-en text-muted">{lesson.title_en}</span>
+                    {syllabus.type === 'narrative' && lesson.chapter_summary && (
+                      <p className="syllabus-home__chapter-summary">{lesson.chapter_summary}</p>
+                    )}
                   </span>
                   <span className="syllabus-home__lesson-cta text-muted">
                     {isCompleted ? t('syllabusHome.review') : t('syllabusHome.start')} →
@@ -251,6 +321,17 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
             {t('syllabusHome.generateReview')}
           </button>
         </section>
+      )}
+
+      {/* ── Narrative arc continuation ────────── */}
+      {syllabus.type === 'narrative' && syllabus.futureArc?.segments?.length > 0 && (
+        <div className="syllabus-home__continue-arc">
+          <h4>{t('narrative.continueArc')}</h4>
+          <p className="syllabus-home__future-summary">
+            {t('narrative.lessonsPlanned', { count: syllabus.futureArc.segments.reduce((sum, s) => sum + (s.end_lesson - s.start_lesson + 1), 0) })}
+          </p>
+          <p className="syllabus-home__next-segment">{syllabus.futureArc.segments[0].summary}</p>
+        </div>
       )}
 
       {/* ── Add more lessons ───────────────────── */}

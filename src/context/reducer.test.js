@@ -275,6 +275,42 @@ describe('baseReducer', () => {
       const next = baseReducer(state, { type: 'EXTEND_SYLLABUS_LESSONS', payload: { id: 'nonexistent', newLessons: [] } });
       expect(next).toBe(state);
     });
+
+    it('consumes futureArc segments when consumeSegments is provided', () => {
+      const syllabus = {
+        ...createSyllabus({ id: 's2' }),
+        type: 'narrative',
+        futureArc: {
+          summary: 'More to come',
+          segments: [
+            { start_lesson: 3, end_lesson: 5, arc_phase: 'rising', summary: 'Segment 1' },
+            { start_lesson: 6, end_lesson: 8, arc_phase: 'climax', summary: 'Segment 2' },
+          ],
+        },
+      };
+      const state = createMinimalState({ syllabi: [syllabus] });
+      const newLessons = [{ title_en: 'Ch3' }];
+      const next = baseReducer(state, { type: 'EXTEND_SYLLABUS_LESSONS', payload: { id: 's2', newLessons, consumeSegments: 1 } });
+      const updated = next.syllabi.find(s => s.id === 's2');
+      expect(updated.futureArc.segments).toHaveLength(1);
+      expect(updated.futureArc.segments[0].summary).toBe('Segment 2');
+    });
+
+    it('clears futureArc when all segments consumed', () => {
+      const syllabus = {
+        ...createSyllabus({ id: 's3' }),
+        type: 'narrative',
+        futureArc: {
+          summary: 'More to come',
+          segments: [{ start_lesson: 3, end_lesson: 5, arc_phase: 'rising', summary: 'Only segment' }],
+        },
+      };
+      const state = createMinimalState({ syllabi: [syllabus] });
+      const newLessons = [{ title_en: 'Ch3' }];
+      const next = baseReducer(state, { type: 'EXTEND_SYLLABUS_LESSONS', payload: { id: 's3', newLessons, consumeSegments: 1 } });
+      const updated = next.syllabi.find(s => s.id === 's3');
+      expect(updated.futureArc).toBeNull();
+    });
   });
 
   // ── Lesson progress actions ─────────────────────────────────

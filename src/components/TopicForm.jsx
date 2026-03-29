@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import { useAppSelector, useAppDispatch } from '../context/useAppSelector';
 import { actions } from '../context/actions';
-import { generateSyllabus, generateReader } from '../lib/api';
+import { generateSyllabus, generateReader, generateNarrativeSyllabus } from '../lib/api';
 import { buildLLMConfig, hasAnyUserKey } from '../lib/llmConfig';
 import { buildLearnerProfile } from '../lib/stats';
 import { getProvider } from '../lib/providers';
@@ -36,7 +36,21 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
   const [mode, setMode]           = useState('syllabus'); // 'syllabus' | 'standalone'
   const [lessonCount, setLessonCount] = useState(6);
   const [readerLength, setReaderLength] = useState(1200);
+  const [syllabusType, setSyllabusType] = useState('standard'); // 'standard' | 'narrative'
+  const [narrativeType, setNarrativeType] = useState('historical'); // 'historical' | 'book'
+  const [sourceTitle, setSourceTitle] = useState('');
+  const [sourceAuthor, setSourceAuthor] = useState('');
+  const [sourcePeriod, setSourcePeriod] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+
+  const isNarrative = mode === 'syllabus' && syllabusType === 'narrative';
+  const minLessons = isNarrative ? 4 : 2;
+  const maxLessons = isNarrative ? 30 : 12;
+
+  useEffect(() => {
+    if (isNarrative && lessonCount < 4) setLessonCount(10);
+    if (!isNarrative && lessonCount > 12) setLessonCount(6);
+  }, [syllabusType, mode]);
 
   const recentTopics = useMemo(() => {
     const all = [
@@ -61,13 +75,46 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
 
   async function handleGenerateSyllabus(e) {
     e.preventDefault();
-    if (!topic.trim()) return;
+    if (!topic.trim() && !(isNarrative && sourceTitle.trim())) return;
 
     act.setLoading(true, t('topicForm.generatingSyllabus'));
     act.clearError();
     try {
       const llmConfig = buildLLMConfig({ providerKeys, activeProvider, activeModels, customBaseUrl });
       const learnerProfile = buildLearnerProfile(learnedVocabulary, generatedReaders, syllabi, learningActivity, langId);
+
+      if (syllabusType === 'narrative') {
+        const sourceMaterial = {
+          title: sourceTitle.trim() || topic.trim(),
+          author: sourceAuthor.trim(),
+          period: sourcePeriod.trim(),
+          description: '',
+        };
+        const { narrativeArc, lessons, futureArc, suggestedTopics } = await generateNarrativeSyllabus(
+          llmConfig, sourceMaterial, narrativeType, level, lessonCount, langId, nativeLang, { learnerProfile }
+        );
+        const newSyllabus = {
+          id: `syllabus_${Date.now().toString(36)}`,
+          topic: sourceTitle.trim() || topic.trim(),
+          level,
+          langId,
+          type: 'narrative',
+          narrativeType,
+          sourceMaterial,
+          narrativeArc,
+          futureArc,
+          summary: narrativeArc.overview || '',
+          lessons,
+          suggestedTopics,
+          createdAt: Date.now(),
+        };
+        setSuggestions(suggestedTopics || []);
+        act.addSyllabus(newSyllabus);
+        act.notify('success', t('notify.syllabusGenerated', { count: lessons.length, topic: newSyllabus.topic }));
+        onNewSyllabus?.(newSyllabus.id);
+        return; // Skip the standard flow below
+      }
+
       const { summary, lessons, suggestedTopics } = await generateSyllabus(llmConfig, topic.trim(), level, lessonCount, langId, nativeLang, { learnerProfile, recentTopics });
       const newSyllabus = {
         id:        `syllabus_${Date.now().toString(36)}`,
@@ -159,6 +206,24 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
         </button>
       </div>
 
+      {mode === 'syllabus' && (
+        <div className="form-group">
+          <label className="form-label">{t('topicForm.syllabusType')}</label>
+          <div className="pill-selector topic-form__type-pills" role="radiogroup" aria-label={t('topicForm.syllabusType')}>
+            <button
+              type="button" role="radio" aria-checked={syllabusType === 'standard'}
+              className={`pill-option ${syllabusType === 'standard' ? 'active' : ''}`}
+              onClick={() => setSyllabusType('standard')} disabled={loading}
+            >{t('topicForm.standard')}</button>
+            <button
+              type="button" role="radio" aria-checked={syllabusType === 'narrative'}
+              className={`pill-option ${syllabusType === 'narrative' ? 'active' : ''}`}
+              onClick={() => setSyllabusType('narrative')} disabled={loading}
+            >{t('topicForm.narrative')}</button>
+          </div>
+        </div>
+      )}
+
       {/* Language selector */}
       {languages.length > 1 && (
         <div className="form-group">
@@ -204,9 +269,11 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
           id="topic-input"
           type="text"
           className="form-input"
-          placeholder={mode === 'syllabus'
-            ? (langConfig.placeholders?.syllabus || 'e.g. Chinese business culture, Traditional festivals…')
-            : (langConfig.placeholders?.standalone || 'e.g. A day at a Beijing market…')}
+          placeholder={isNarrative
+            ? t('topicForm.narrativeTopicHint')
+            : mode === 'syllabus'
+              ? (langConfig.placeholders?.syllabus || 'e.g. Chinese business culture, Traditional festivals…')
+              : (langConfig.placeholders?.standalone || 'e.g. A day at a Beijing market…')}
           value={topic}
           onChange={e => setTopic(e.target.value)}
           disabled={loading}
@@ -223,6 +290,52 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
             ))}
           </div>
         </div>
+      )}
+
+      {isNarrative && (
+        <>
+          <div className="form-group">
+            <label className="form-label">{t('topicForm.narrativeType')}</label>
+            <div className="pill-selector" role="radiogroup" aria-label={t('topicForm.narrativeType')}>
+              <button
+                type="button" role="radio" aria-checked={narrativeType === 'historical'}
+                className={`pill-option ${narrativeType === 'historical' ? 'active' : ''}`}
+                onClick={() => setNarrativeType('historical')} disabled={loading}
+              >{t('topicForm.historicalDeepDive')}</button>
+              <button
+                type="button" role="radio" aria-checked={narrativeType === 'book'}
+                className={`pill-option ${narrativeType === 'book' ? 'active' : ''}`}
+                onClick={() => setNarrativeType('book')} disabled={loading}
+              >{t('topicForm.bookAbridgement')}</button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="source-title">{t('topicForm.sourceTitle')}</label>
+            <input
+              id="source-title" type="text" className="form-input"
+              placeholder={narrativeType === 'book' ? t('topicForm.sourceTitlePlaceholderBook') : t('topicForm.sourceTitlePlaceholderHistorical')}
+              value={sourceTitle} onChange={e => setSourceTitle(e.target.value)} disabled={loading}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="source-author">{t('topicForm.sourceAuthor')}</label>
+            <input
+              id="source-author" type="text" className="form-input"
+              placeholder={t('topicForm.sourceAuthorPlaceholder')}
+              value={sourceAuthor} onChange={e => setSourceAuthor(e.target.value)} disabled={loading}
+            />
+          </div>
+          {narrativeType === 'historical' && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="source-period">{t('topicForm.sourcePeriod')}</label>
+              <input
+                id="source-period" type="text" className="form-input"
+                placeholder={t('topicForm.sourcePeriodPlaceholder')}
+                value={sourcePeriod} onChange={e => setSourcePeriod(e.target.value)} disabled={loading}
+              />
+            </div>
+          )}
+        </>
       )}
 
       <div className="form-group">
@@ -274,13 +387,13 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
             id="lesson-count"
             type="range"
             className="topic-form__slider"
-            min={2} max={12} step={1}
+            min={minLessons} max={maxLessons} step={1}
             value={lessonCount}
             onChange={e => setLessonCount(Number(e.target.value))}
             disabled={loading}
           />
           <div className="topic-form__slider-ticks">
-            <span>2</span><span>12</span>
+            <span>{minLessons}</span><span>{maxLessons}</span>
           </div>
         </div>
       )}
@@ -309,7 +422,7 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
       <button
         type="submit"
         className="btn btn-primary btn-lg topic-form__submit"
-        disabled={loading || !topic.trim() || !canGenerate}
+        disabled={loading || (!topic.trim() && !(isNarrative && sourceTitle.trim())) || !canGenerate}
       >
         {loading
           ? t('topicForm.generating')

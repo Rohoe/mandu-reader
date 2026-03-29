@@ -21,6 +21,7 @@ import VocabularyList from '../VocabularyList';
 import ComprehensionQuestions from '../ComprehensionQuestions';
 import AnkiExportButton from '../AnkiExportButton';
 import GrammarNotes from '../GrammarNotes';
+import AccuracyNotes from './AccuracyNotes';
 import ReaderHeader from '../ReaderHeader';
 import ReaderActions from '../ReaderActions';
 import ReaderEmptyState from './ReaderEmptyState';
@@ -414,6 +415,9 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
 
       {/* Grammar notes */}
       <GrammarNotes grammarNotes={reader.grammarNotes} renderChars={renderChars} />
+
+      {/* Accuracy notes */}
+      <AccuracyNotes notes={reader.accuracyNotes} />
 
       {/* Chat summary (from tutor conversation) */}
       {reader.chatSummary && (

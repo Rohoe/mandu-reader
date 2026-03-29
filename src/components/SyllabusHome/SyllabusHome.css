@@ -82,6 +82,150 @@
   border-color: var(--color-border);
 }
 
+/* ── Narrative badge ─────────────────────── */
+.syllabus-home__narrative-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--color-accent);
+  color: white;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ── Source material (narrative) ─────────── */
+.syllabus-home__source-material {
+  padding: 12px 16px;
+  background: var(--color-surface, #f5f3f0);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.syllabus-home__source-material h4 {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+.syllabus-home__source-title {
+  font-weight: 600;
+  margin: 0;
+}
+
+.syllabus-home__source-author,
+.syllabus-home__source-period {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+/* ── Characters (narrative) ──────────────── */
+.syllabus-home__characters {
+  margin-bottom: 16px;
+}
+
+.syllabus-home__characters summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.syllabus-home__character-list {
+  list-style: none;
+  padding: 8px 0 0 0;
+  margin: 0;
+}
+
+.syllabus-home__character-list li {
+  padding: 4px 0;
+  font-size: 0.9rem;
+}
+
+/* ── Story arc visualization (narrative) ─── */
+.syllabus-home__arc-viz {
+  margin-bottom: 16px;
+}
+
+.syllabus-home__arc-viz h4 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.syllabus-home__arc-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.syllabus-home__arc-segment {
+  flex: 1;
+  border-radius: 2px;
+  background: var(--color-border, #e0dcd7);
+  transition: background 0.2s;
+}
+
+.syllabus-home__arc-segment.completed { background: var(--color-accent); }
+.syllabus-home__arc-segment.current { background: var(--color-accent); opacity: 0.6; }
+.syllabus-home__arc-segment--future { background: var(--color-border, #e0dcd7); opacity: 0.4; }
+.syllabus-home__arc-segment--setup { border-bottom: 2px solid transparent; }
+.syllabus-home__arc-segment--climax { border-bottom: 2px solid transparent; }
+
+.syllabus-home__arc-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  opacity: 0.5;
+  margin-top: 4px;
+}
+
+/* ── Chapter summary + position badge ────── */
+.syllabus-home__chapter-summary {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+
+.syllabus-home__position-badge {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-border, #e0dcd7);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 6px;
+}
+
+/* ── Narrative arc continuation ──────────── */
+.syllabus-home__continue-arc {
+  padding: 12px 16px;
+  background: var(--color-surface, #f5f3f0);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.syllabus-home__continue-arc h4 {
+  margin: 0 0 4px;
+}
+
+.syllabus-home__future-summary {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.syllabus-home__next-segment {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin: 0;
+}
+
 /* ── Sections ────────────────────────────── */
 .syllabus-home__section {
   display: flex;

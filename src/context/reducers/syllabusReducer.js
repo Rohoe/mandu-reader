@@ -22,7 +22,7 @@ export function syllabusReducer(state, action) {
     }
 
     case EXTEND_SYLLABUS_LESSONS: {
-      const { id, newLessons } = action.payload;
+      const { id, newLessons, consumeSegments } = action.payload;
       const syllabusIdx = state.syllabi.findIndex(s => s.id === id);
       if (syllabusIdx === -1) {
         console.warn(`[syllabusReducer] EXTEND_SYLLABUS_LESSONS: syllabus '${id}' not found`);
@@ -32,6 +32,13 @@ export function syllabusReducer(state, action) {
       const startNum = existing.lessons.length + 1;
       const renumbered = newLessons.map((l, i) => ({ ...l, lesson_number: startNum + i }));
       const updated = { ...existing, lessons: [...existing.lessons, ...renumbered] };
+      // For narrative syllabi: consume used futureArc segments
+      if (consumeSegments && updated.futureArc?.segments) {
+        const remaining = updated.futureArc.segments.slice(consumeSegments);
+        updated.futureArc = remaining.length > 0
+          ? { ...updated.futureArc, segments: remaining }
+          : null;
+      }
       const newSyllabi = state.syllabi.map(s => s.id === id ? updated : s);
       return { ...state, syllabi: newSyllabi };
     }

@@ -6,6 +6,7 @@ import { generateReader, generateReaderStream } from '../lib/api';
 import { parseReaderResponse, normalizeStructuredReader } from '../lib/parser';
 import { getLang } from '../lib/languages';
 import { buildLearnerContext } from '../lib/stats';
+import { buildNarrativeContext } from '../prompts/narrativeReaderPrompt';
 import { useStreamAccumulator } from './useStreamAccumulator';
 
 export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput = false, nativeLang = 'en', syllabus, generatedReaders, learningActivity }) {
@@ -55,24 +56,28 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
       const currentIdx = (lessonMeta.lesson_number || 1) - 1;
       const lessons = syllabus.lessons;
 
-      // Improvement 1: Vocabulary focus from syllabus lesson
+      // Vocabulary focus from syllabus lesson
       if (lessonMeta.vocabulary_focus?.length > 0) {
         genOptions.vocabFocus = lessonMeta.vocabulary_focus;
       }
 
-      // Improvement 5: Progressive difficulty hint
+      // Progressive difficulty hint
       if (lessonMeta.difficulty_hint) {
         genOptions.difficultyHint = lessonMeta.difficulty_hint;
       }
 
-      // Improvement 3: Cumulative lesson context
-      if (currentIdx > 0) {
+      // Narrative vs standard context threading
+      if (syllabus.type === 'narrative') {
+        genOptions.narrativeContext = buildNarrativeContext(syllabus, generatedReaders || {}, currentIdx);
+        genOptions.narrativeType = syllabus.narrativeType;
+      } else if (currentIdx > 0) {
+        // Standard cumulative lesson context
         const previousLessons = lessons.slice(0, currentIdx)
           .map((l, i) => `${i + 1}. ${l.title_en || ''} — vocab themes: ${(l.vocabulary_focus || []).join(', ')}`);
         genOptions.syllabusContext = `This is lesson ${currentIdx + 1} of ${lessons.length} in a course about "${syllabus.topic}".\nPrevious lessons covered:\n${previousLessons.join('\n')}\nCurrent lesson focus: ${(lessonMeta.vocabulary_focus || []).join(', ')}\nBuild upon earlier concepts while introducing new material.`;
       }
 
-      // Improvement 6: Grammar progression tracking
+      // Grammar progression tracking
       if (generatedReaders) {
         const taughtGrammar = [];
         for (let i = 0; i < currentIdx; i++) {

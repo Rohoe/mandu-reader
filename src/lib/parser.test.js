@@ -1147,3 +1147,125 @@ describe('normalizeStructuredReader', () => {
     expect(result.langId).toBe('zh');
   });
 });
+
+// ── Accuracy Notes extraction ───────────────────────────────
+
+describe('accuracy notes extraction', () => {
+  it('extracts accuracy-json block', () => {
+    const raw = `### 1. Title
+丝绸之路
+The Silk Road
+
+### 2. Story
+A story about the Silk Road.
+
+### 3. Vocabulary
+\`\`\`vocab-json
+[{ "chinese": "丝绸", "pinyin": "sīchóu", "english": "silk" }]
+\`\`\`
+
+### 4. Comprehension Questions
+[MC] What was traded?
+A. Silk
+B. Gold
+Answer: A
+
+### 5. Grammar Notes
+**了 particle** — completion marker
+
+### 6. Suggested Topics
+Ancient trade routes
+
+### 7. Accuracy Notes
+\`\`\`accuracy-json
+[
+  { "claim": "Zhang Qian traveled the Silk Road in 138 BCE", "status": "accurate", "note": "Zhang Qian was indeed sent by Emperor Wu in 138 BCE" },
+  { "claim": "Silk was the only trade good", "status": "simplified", "note": "Many goods were traded including spices, jade, and metals" }
+]
+\`\`\`
+
+### 8. Story So Far
+Zhang Qian set out from Chang'an in 138 BCE on a diplomatic mission.
+Character updates: Zhang Qian established as determined explorer`;
+
+    const result = parseReaderResponse(raw);
+    expect(result.accuracyNotes).toHaveLength(2);
+    expect(result.accuracyNotes[0].claim).toContain('Zhang Qian');
+    expect(result.accuracyNotes[0].status).toBe('accurate');
+    expect(result.accuracyNotes[1].status).toBe('simplified');
+  });
+
+  it('returns empty array when no accuracy-json block', () => {
+    const raw = `### 1. Title
+Test
+### 2. Story
+A story.`;
+    const result = parseReaderResponse(raw);
+    expect(result.accuracyNotes).toEqual([]);
+  });
+
+  it('returns empty array for malformed accuracy-json', () => {
+    const raw = `\`\`\`accuracy-json
+not valid json
+\`\`\``;
+    const result = parseReaderResponse(raw);
+    expect(result.accuracyNotes).toEqual([]);
+  });
+});
+
+// ── Narrative State extraction ──────────────────────────────
+
+describe('narrative state extraction', () => {
+  it('extracts Story So Far section with character updates', () => {
+    const raw = `### 1. Title
+Test
+
+### 2. Story
+A story.
+
+### 7. Story So Far
+Zhang Qian departed Chang'an in 138 BCE. He was captured by the Xiongnu and held for 10 years before escaping.
+Character updates: Zhang Qian has grown more resourceful after years in captivity.`;
+
+    const result = parseReaderResponse(raw);
+    expect(result.narrativeState).not.toBeNull();
+    expect(result.narrativeState.runningSummary).toContain('Zhang Qian departed');
+    expect(result.narrativeState.runningSummary).toContain('escaping');
+    expect(result.narrativeState.characterUpdates).toContain('resourceful');
+  });
+
+  it('extracts Story So Far as section 8', () => {
+    const raw = `### 7. Accuracy Notes
+\`\`\`accuracy-json
+[]
+\`\`\`
+
+### 8. Story So Far
+The story continues from where it left off.
+Character updates: No major changes.`;
+
+    const result = parseReaderResponse(raw);
+    expect(result.narrativeState).not.toBeNull();
+    expect(result.narrativeState.runningSummary).toContain('story continues');
+    expect(result.narrativeState.characterUpdates).toContain('No major changes');
+  });
+
+  it('returns null when no Story So Far section', () => {
+    const raw = `### 1. Title
+Test
+### 2. Story
+A story.`;
+    const result = parseReaderResponse(raw);
+    expect(result.narrativeState).toBeNull();
+  });
+
+  it('handles Story So Far without character updates', () => {
+    const raw = `### 7. Story So Far
+A brief summary of events so far.`;
+
+    const result = parseReaderResponse(raw);
+    expect(result.narrativeState).not.toBeNull();
+    expect(result.narrativeState.runningSummary).toContain('brief summary');
+    expect(result.narrativeState.characterUpdates).toBe('');
+  });
+});

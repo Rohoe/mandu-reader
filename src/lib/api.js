@@ -12,6 +12,9 @@ import { buildSyllabusPrompt } from '../prompts/syllabusPrompt';
 import { buildReaderSystem } from '../prompts/readerSystemPrompt';
 import { buildGradingSystem } from '../prompts/gradingPrompt';
 import { buildExtendSyllabusPrompt } from '../prompts/extendSyllabusPrompt';
+import { buildNarrativeSyllabusPrompt } from '../prompts/narrativeSyllabusPrompt';
+import { buildExtendNarrativeSyllabusPrompt } from '../prompts/extendNarrativeSyllabusPrompt';
+import { buildNarrativeReaderSystem } from '../prompts/narrativeReaderPrompt';
 import { createTimeoutController, parseJSONWithFallback, fetchWithRetry, isRetryable, classifyApiError, buildAnthropicHeaders, parseSSEStream } from './apiUtils';
 
 export { isRetryable, classifyApiError };
@@ -267,7 +270,7 @@ const MAX_VOCAB_LIST = 200;
  * optional continuation context, syllabus context, vocabulary focus, and
  * grammar tracking.
  */
-function buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext } = {}) {
+function buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext, narrativeContext } = {}) {
   const learnedList = Object.keys(learnedWords)
     .filter(w => !learnedWords[w].langId || learnedWords[w].langId === langId)
     .sort((a, b) => (learnedWords[b].dateAdded || 0) - (learnedWords[a].dateAdded || 0))
@@ -281,10 +284,12 @@ function buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vo
     ? `\n\nVocabulary focus for this lesson: ${vocabFocus.join(', ')}. Prioritize selecting new vocabulary related to these themes.`
     : '';
 
-  // Cumulative lesson context from syllabus
-  const syllabusSection = syllabusContext
-    ? `\n\n${syllabusContext}`
-    : '';
+  // Cumulative lesson context from syllabus (narrative context takes precedence)
+  const syllabusSection = narrativeContext
+    ? `\n\n${narrativeContext}`
+    : syllabusContext
+      ? `\n\n${syllabusContext}`
+      : '';
 
   // Grammar patterns already taught in prior lessons
   const grammarSection = taughtGrammar?.length > 0
@@ -318,7 +323,7 @@ function buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vo
  * Streaming variant of generateReader. Returns an async generator of text chunks.
  * Only supports Anthropic provider.
  */
-export async function* generateReaderStream(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal: externalSignal, nativeLang = 'en', vocabFocus, syllabusContext, taughtGrammar, difficultyHint, learnerContext } = {}) {
+export async function* generateReaderStream(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal: externalSignal, nativeLang = 'en', vocabFocus, syllabusContext, taughtGrammar, difficultyHint, learnerContext, narrativeContext, narrativeType } = {}) {
   const { apiKey, model } = llmConfig;
   if (!apiKey) throw new Error('No API key provided. Please add your API key in Settings.');
 
@@ -326,8 +331,10 @@ export async function* generateReaderStream(llmConfig, topic, level, learnedWord
   const nativeLangName = getNativeLang(nativeLang).name;
   const rangePadding = targetChars <= 300 ? 50 : 100;
   const charRange = `${targetChars - rangePadding}-${targetChars + rangePadding}`;
-  const system = buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint });
-  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext });
+  const system = narrativeType
+    ? buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, narrativeType })
+    : buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint });
+  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext, narrativeContext });
 
   const { signal, cleanup } = createTimeoutController(externalSignal);
 
@@ -353,6 +360,24 @@ export async function generateSyllabus(llmConfig, topic, level, lessonCount = 6,
     return { summary: '', lessons: result, suggestedTopics: [] };
   }
   return { summary: result.summary || '', lessons: result.lessons || [], suggestedTopics: result.suggested_topics || result.suggestedTopics || [] };
+}
+
+// ── Narrative syllabus generation ─────────────────────────
+
+export async function generateNarrativeSyllabus(llmConfig, sourceMaterial, narrativeType, level, lessonCount = 20, langId = DEFAULT_LANG_ID, nativeLang = 'en', { learnerProfile } = {}) {
+  const langConfig = getLang(langId);
+  const nativeLangName = getNativeLang(nativeLang).name;
+  const prompt = buildNarrativeSyllabusPrompt(langConfig, sourceMaterial, narrativeType, level, lessonCount, nativeLangName, { learnerProfile });
+
+  const raw = await callLLM(llmConfig, '', prompt, 4096);
+  const result = parseJSONWithFallback(raw, 'LLM returned an invalid narrative syllabus format. Please try again.');
+
+  return {
+    narrativeArc: result.narrative_arc || {},
+    lessons: result.lessons || [],
+    futureArc: result.future_arc || null,
+    suggestedTopics: result.suggested_topics || result.suggestedTopics || [],
+  };
 }
 
 // ── Answer grading ────────────────────────────────────────────
@@ -550,13 +575,15 @@ export const READER_JSON_SCHEMA = {
 
 // ── Reader generation ─────────────────────────────────────────
 
-export async function generateReader(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal, structured = false, nativeLang = 'en', vocabFocus, syllabusContext, taughtGrammar, difficultyHint, learnerContext, recentTopics } = {}) {
+export async function generateReader(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal, structured = false, nativeLang = 'en', vocabFocus, syllabusContext, taughtGrammar, difficultyHint, learnerContext, recentTopics, narrativeContext, narrativeType } = {}) {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
   const rangePadding = targetChars <= 300 ? 50 : 100;
   const charRange = `${targetChars - rangePadding}-${targetChars + rangePadding}`;
-  const system = buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, recentTopics });
-  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext });
+  const system = narrativeType
+    ? buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, narrativeType })
+    : buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, recentTopics });
+  const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext, narrativeContext });
 
   return await callLLM(llmConfig, system, userMessage, maxTokens, { signal, structured });
 }
@@ -570,6 +597,18 @@ export async function extendSyllabus(llmConfig, topic, level, existingLessons, a
 
   const raw = await callLLM(llmConfig, '', prompt, 2048);
   const lessons = parseJSONWithFallback(raw, 'LLM returned an invalid lesson format. Please try again.');
+
+  if (!Array.isArray(lessons)) throw new Error('Expected an array of lessons. Please try again.');
+  return { lessons };
+}
+
+export async function extendNarrativeSyllabus(llmConfig, syllabus, additionalCount = 10, nativeLang = 'en') {
+  const langConfig = getLang(syllabus.langId);
+  const nativeLangName = getNativeLang(nativeLang).name;
+  const prompt = buildExtendNarrativeSyllabusPrompt(langConfig, syllabus, additionalCount, nativeLangName);
+
+  const raw = await callLLM(llmConfig, '', prompt, 4096);
+  const lessons = parseJSONWithFallback(raw, 'LLM returned an invalid narrative lesson format. Please try again.');
 
   if (!Array.isArray(lessons)) throw new Error('Expected an array of lessons. Please try again.');
   return { lessons };

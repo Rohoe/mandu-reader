@@ -180,6 +180,20 @@ export default {
   'topicForm.enterTopic': 'Enter a topic above to get started',
   'topicForm.suggestedTopics': 'Try these topics',
   'topicForm.generatingSyllabus': 'Generating syllabus…',
+  'topicForm.syllabusType': 'Syllabus Type',
+  'topicForm.standard': 'Standard',
+  'topicForm.narrative': 'Narrative Arc',
+  'topicForm.narrativeType': 'Narrative Type',
+  'topicForm.historicalDeepDive': 'Historical Deep Dive',
+  'topicForm.bookAbridgement': 'Book Abridgement',
+  'topicForm.sourceTitle': 'Title',
+  'topicForm.sourceTitlePlaceholderBook': 'e.g. Journey to the West, Les Mis\u00e9rables\u2026',
+  'topicForm.sourceTitlePlaceholderHistorical': 'e.g. The Silk Road, The French Revolution\u2026',
+  'topicForm.sourceAuthor': 'Author (optional)',
+  'topicForm.sourceAuthorPlaceholder': 'e.g. Victor Hugo, Luo Guanzhong\u2026',
+  'topicForm.sourcePeriod': 'Period / Era',
+  'topicForm.sourcePeriodPlaceholder': 'e.g. 200 BCE \u2013 1400 CE, 1789\u20131799\u2026',
+  'topicForm.narrativeTopicHint': 'Topic (optional if title provided above)',
 
   // ── Generation Progress ───────────────────────────────────────
   'progress.connectingTo': 'Connecting to {provider}…',
@@ -392,6 +406,12 @@ export default {
   // ── Grammar notes ─────────────────────────────────────────────
   'grammar.title': 'Grammar Notes',
 
+  // ── Accuracy notes ───────────────────────────────────────────
+  'accuracyNotes.title': 'Accuracy Notes',
+  'accuracyNotes.accurate': 'Accurate',
+  'accuracyNotes.simplified': 'Simplified',
+  'accuracyNotes.creativeLiberty': 'Creative Liberty',
+
   // ── Anki export ───────────────────────────────────────────────
   'anki.translating': 'Translating…',
   'anki.generating': 'Generating…',
@@ -530,6 +550,18 @@ export default {
   'syllabusHome.generateReview': 'Generate Review',
   'syllabusHome.readyToAdvance': 'Ready to advance to {level}!',
   'syllabusHome.almostReady': 'Almost ready for {level}',
+
+  // ── Narrative syllabi ─────────────────────────────────────────
+  'narrative.historicalDeepDive': 'Historical Deep Dive',
+  'narrative.bookAbridgement': 'Book Abridgement',
+  'narrative.sourceMaterial': 'Source Material',
+  'narrative.characters': 'Characters',
+  'narrative.storyArc': 'Story Arc',
+  'narrative.setup': 'Setup',
+  'narrative.climax': 'Climax',
+  'narrative.resolution': 'Resolution',
+  'narrative.continueArc': 'Continue Arc',
+  'narrative.lessonsPlanned': '{count} more lessons planned',
 
   // ── ApiKeySetup (legacy) ──────────────────────────────────────
   'apiKeySetup.title': 'Mandarin Graded Reader',

@@ -1,0 +1,82 @@
+.accuracy-notes {
+  margin-top: var(--space-2);
+}
+
+.accuracy-notes__header {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  padding: var(--space-2) 0;
+  color: var(--color-text-muted);
+}
+
+.accuracy-notes__list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.accuracy-notes__item {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border-light);
+}
+
+.accuracy-notes__badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-right: var(--space-2);
+  font-weight: 600;
+}
+
+.accuracy-notes__badge--accurate {
+  background: #d4edda;
+  color: #155724;
+}
+
+.accuracy-notes__badge--simplified {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.accuracy-notes__badge--creative_liberty {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+[data-theme="dark"] .accuracy-notes__badge--accurate {
+  background: #1a3a2a;
+  color: #8fd4a4;
+}
+
+[data-theme="dark"] .accuracy-notes__badge--simplified {
+  background: #3a3520;
+  color: #d4c07a;
+}
+
+[data-theme="dark"] .accuracy-notes__badge--creative_liberty {
+  background: #1a2f35;
+  color: #7ac4d4;
+}
+
+.accuracy-notes__claim {
+  font-size: var(--text-sm);
+}
+
+.accuracy-notes__explanation {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: var(--space-1) 0 0;
+  line-height: var(--leading-relaxed);
+}

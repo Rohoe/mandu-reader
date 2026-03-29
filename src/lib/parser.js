@@ -17,6 +17,8 @@ const EMPTY_RESULT = Object.freeze({
   ankiJson:         [],
   grammarNotes:     [],
   suggestedTopics:  [],
+  accuracyNotes:    [],
+  narrativeState:   null,
   parseWarnings:    [],
   parseError:       null,
   langId:           DEFAULT_LANG_ID,
@@ -91,6 +93,41 @@ function extractVocabJson(rawText) {
     }
   }
   return [];
+}
+
+function extractAccuracyNotes(rawText) {
+  const match = rawText.match(/```accuracy-json\s*\n([\s\S]*?)\n```/);
+  if (match) {
+    try {
+      const arr = JSON.parse(match[1]);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      console.warn('[parser] Failed to parse accuracy-json block:', e);
+      return [];
+    }
+  }
+  return [];
+}
+
+function extractNarrativeState(rawText) {
+  // Match section 8 header, capture content until next section or end
+  // Section may be 7 or 8 depending on whether accuracy notes are present
+  const match = rawText.match(/#{2,4}\s*(?:\d\.\s*)?Story So Far\s*\n+([\s\S]*?)(?=#{2,4}\s*\d|$)/i);
+  if (!match) return null;
+
+  const block = match[1].trim();
+  if (!block) return null;
+
+  // Split out character updates if present
+  const charMatch = block.match(/Character updates?:\s*(.+)/i);
+  const characterUpdates = charMatch ? charMatch[1].trim() : '';
+
+  // Running summary is everything before the character updates line
+  const runningSummary = charMatch
+    ? block.slice(0, charMatch.index).trim()
+    : block;
+
+  return { runningSummary, characterUpdates };
 }
 
 function normalizeVocabEntry(v) {
@@ -275,6 +312,8 @@ export function parseReaderResponse(rawText, langId = DEFAULT_LANG_ID) {
       titleZh, titleEn, story,
       vocabulary,
       questions, ankiJson, grammarNotes, suggestedTopics,
+      accuracyNotes: extractAccuracyNotes(rawText),
+      narrativeState: extractNarrativeState(rawText),
       parseWarnings: [...titleWarnings, ...storyWarnings],
       parseError: null,
       langId,
