@@ -38,6 +38,13 @@ ${p.getStoryRequirements(level)}
 - NARRATIVE CONTINUITY: This is a chapter in a serialized narrative. You MUST maintain character names, relationships, personality traits, and plot threads exactly as established in the narrative context provided. Do not introduce contradictions with prior chapters.
 - If narrative context is provided below, continue the story naturally from where the previous chapter left off.
 
+## NARRATIVE STYLE${narrativeType === 'book' ? `
+- Capture the source material's distinctive literary voice and techniques. Write as an adaptation that honors the original's style, not a generic retelling.` : ''}${narrativeType === 'historical' ? `
+- Present history through character-driven drama. Show people making decisions under pressure, not abstract forces moving through time.` : ''}
+- Vary your pacing within the chapter — mix dialogue, action, and reflection. Not every paragraph should read the same way.
+- Create vivid sensory detail for settings. Ground the reader in a specific time and place.
+- Let characters reveal themselves through their words and actions, not exposition.
+
 ## OUTPUT FORMAT
 
 IMPORTANT: Use EXACTLY these English section headings (do not translate them):
@@ -181,7 +188,17 @@ export function buildNarrativeContext(syllabus, generatedReaders, currentIdx) {
     if (current.chapter_summary) lines.push(`Current chapter plan: ${current.chapter_summary}`);
     if (current.setting) lines.push(`Setting: ${current.setting}`);
     if (current.characters?.length) lines.push(`Featured characters: ${current.characters.join(', ')}`);
-    if (current.narrative_position) lines.push(`Narrative position: ${current.narrative_position}`);
+    if (current.narrative_position) {
+      lines.push(`Narrative position: ${current.narrative_position}`);
+      const pacingGuide = {
+        setup: 'Pacing: Establish the world and characters with vivid detail. Build curiosity.',
+        rising: 'Pacing: Escalate stakes and tension. Deepen conflicts.',
+        climax: 'Pacing: Maximum dramatic intensity. The pivotal confrontation or turning point.',
+        falling: 'Pacing: Show consequences unfolding. Characters reckon with what happened.',
+        resolution: 'Pacing: Bring closure. Reflect on what the journey meant.',
+      };
+      if (pacingGuide[current.narrative_position]) lines.push(pacingGuide[current.narrative_position]);
+    }
     if (current.continuity_notes) lines.push(`Key facts to maintain: ${current.continuity_notes}`);
   }
 
