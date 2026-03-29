@@ -15,7 +15,7 @@ export default function ReaderPregenerate({
             <p className="reader-view__lesson-num text-subtle font-display">{t('reader.lessonNum', { number: lessonMeta.lesson_number })}</p>
             <h2 className="text-target-title reader-view__lesson-title">{getLessonTitle(lessonMeta, langId)}</h2>
             <p className="reader-view__lesson-en font-display text-muted">{lessonMeta.title_en}</p>
-            {lessonMeta.description && <p className="reader-view__lesson-desc">{lessonMeta.description}</p>}
+            {(lessonMeta.chapter_summary || lessonMeta.description) && <p className="reader-view__lesson-desc">{lessonMeta.chapter_summary || lessonMeta.description}</p>}
             {lessonMeta.vocabulary_focus && (
               <p className="reader-view__vocab-focus text-subtle">
                 {t('reader.pregen.focus')} {Array.isArray(lessonMeta.vocabulary_focus)
