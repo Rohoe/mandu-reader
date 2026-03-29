@@ -30,7 +30,7 @@ CRITICAL: Follow the exact section format below. Never omit sections or change h
 - Only bold words that are in the vocabulary list — do not bold other words
 
 ## STORY REQUIREMENTS
-- Length: ${charRange} ${langConfig.charUnit}
+- Length: ${charRange} ${langConfig.charUnit}. IMPORTANT: the story MUST reach this target length. Do not wrap up the narrative prematurely — if the plot resolves early, develop additional scenes, dialogue, or descriptive detail. A story under ${targetChars - (targetChars <= 300 ? 50 : 100)} ${langConfig.charUnitShort} is too short.
 - Topic: ${topic}
 ${p.getStoryRequirements(level)}
 - Where natural, reuse previously-learned vocabulary to reinforce retention
