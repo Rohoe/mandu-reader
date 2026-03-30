@@ -271,8 +271,9 @@ const MAX_VOCAB_LIST = 200;
  * grammar tracking.
  */
 function buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext, narrativeContext, masteredWords } = {}) {
+  const masteredSet = new Set(masteredWords || []);
   const learnedList = Object.keys(learnedWords)
-    .filter(w => !learnedWords[w].langId || learnedWords[w].langId === langId)
+    .filter(w => (!learnedWords[w].langId || learnedWords[w].langId === langId) && !masteredSet.has(w))
     .sort((a, b) => (learnedWords[b].dateAdded || 0) - (learnedWords[a].dateAdded || 0))
     .slice(0, MAX_VOCAB_LIST);
   const learnedSection = learnedList.length > 0
