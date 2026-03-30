@@ -96,6 +96,17 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
     const learnerCtx = buildLearnerContext(learnedVocabulary, generatedReaders, learningActivity, readerLangId);
     if (learnerCtx) genOptions.learnerContext = learnerCtx;
 
+    // Mastered vocab exclusion — don't re-teach words the learner already knows well
+    if (learnedVocabulary && Object.keys(learnedVocabulary).length > 0) {
+      const mastered = Object.keys(learnedVocabulary)
+        .filter(w => {
+          const v = learnedVocabulary[w];
+          return (v.interval ?? 0) >= 21 && (!v.langId || v.langId === readerLangId);
+        })
+        .slice(0, 30);
+      if (mastered.length > 0) genOptions.masteredWords = mastered;
+    }
+
     // Use streaming for Anthropic when not using structured output
     const useStreaming = llmConfig.provider === 'anthropic' && !useStructuredOutput;
 

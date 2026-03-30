@@ -34,7 +34,10 @@ CRITICAL: Follow the exact section format below. Never omit sections or change h
 - Topic: ${topic}
 ${p.getStoryRequirements(level)}
 - Where natural, reuse previously-learned vocabulary to reinforce retention
-- If a "Learner Adaptation Context" section is provided, use it to guide vocabulary selection: reinforce words the learner struggles with, and prefer grammar patterns the learner has not yet mastered${difficultyHint === 'review' ? '\n- Use simpler grammar and shorter sentences, reviewing fundamentals' : ''}${difficultyHint === 'stretch' ? '\n- Introduce a few patterns from the next level up as preview' : ''}
+- If a "Learner Adaptation Context" section is provided:
+  - Reinforce words the learner struggles with by weaving them into the story naturally
+  - Prioritize teaching grammar patterns the learner has not yet mastered in the Grammar Notes section
+  - If the learner's trajectory is "accelerating," introduce slightly more ambitious vocabulary; if "decelerating," emphasize review and familiar patterns${difficultyHint === 'review' ? '\n- Use simpler grammar and shorter sentences, reviewing fundamentals' : ''}${difficultyHint === 'stretch' ? '\n- Introduce a few patterns from the next level up as preview' : ''}
 - NARRATIVE CONTINUITY: This is a chapter in a serialized narrative. You MUST maintain character names, relationships, personality traits, and plot threads exactly as established in the narrative context provided. Do not introduce contradictions with prior chapters.
 - If narrative context is provided below, continue the story naturally from where the previous chapter left off.
 
