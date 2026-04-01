@@ -1,10 +1,46 @@
+import { useState, useMemo } from 'react';
 import { getLang } from '../../lib/languages';
+import { getNativeLang } from '../../lib/nativeLanguages';
+import { useAppSelector } from '../../context/useAppSelector';
+import { buildInteractiveDesignPrompt } from '../../prompts/portablePrompt';
 import { useT } from '../../i18n';
 
 export default function StepInterests({ profile, onChange, languages, canGenerate, onGenerate, onCancel, onOpenSettings, onShowImport }) {
   const t = useT();
   const langConfig = getLang(profile.langId);
   const profLevels = langConfig.proficiency.levels;
+  const nativeLang = useAppSelector(s => s.nativeLang || 'en');
+
+  // External design flow: null | { target: 'claude' | 'chatgpt', step: 'preview' | 'copied' }
+  const [externalFlow, setExternalFlow] = useState(null);
+
+  const isMac = useMemo(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform), []);
+  const pasteShortcut = isMac ? '\u2318V' : 'Ctrl+V';
+
+  const externalPrompt = useMemo(() => {
+    if (!externalFlow) return '';
+    const langName = langConfig.prompts.targetLanguage;
+    const nativeLangName = getNativeLang(nativeLang).name;
+    return buildInteractiveDesignPrompt(langName, nativeLangName);
+  }, [externalFlow, langConfig, nativeLang]);
+
+  function handleCopyAndOpen() {
+    if (!externalFlow) return;
+    const url = externalFlow.target === 'claude'
+      ? 'https://claude.ai/new'
+      : 'https://chatgpt.com';
+    navigator.clipboard.writeText(externalPrompt).catch(() => {
+      console.warn('[PathWizard] Clipboard write failed');
+    });
+    window.open(url, '_blank');
+    setExternalFlow(f => f && { ...f, step: 'copied' });
+  }
+
+  function handleCopyAgain() {
+    navigator.clipboard.writeText(externalPrompt).catch(() => {
+      console.warn('[PathWizard] Clipboard write failed');
+    });
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -137,10 +173,83 @@ export default function StepInterests({ profile, onChange, languages, canGenerat
         <button type="button" className="btn btn-ghost" onClick={onCancel}>
           {t('common.cancel')}
         </button>
-        {onShowImport && (
-          <button type="button" className="btn-link path-wizard__import-link" onClick={onShowImport}>
-            {t('pathWizard.importLink')}
-          </button>
+        <div className="path-wizard__secondary-actions">
+          {onShowImport && (
+            <button type="button" className="btn-link" onClick={onShowImport}>
+              {t('pathWizard.importLink')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* External AI design flow */}
+      <div className="path-wizard__external-section">
+        <div className="path-wizard__divider">
+          <span>{t('pathWizard.orDivider')}</span>
+        </div>
+
+        {externalFlow ? (
+          <div className="path-wizard__external-card">
+            {externalFlow.step === 'preview' ? (
+              <>
+                <div className="path-wizard__external-label">
+                  {t('pathWizard.externalDesignWith', { target: externalFlow.target === 'claude' ? 'Claude' : 'ChatGPT' })}
+                </div>
+                <div className="path-wizard__external-preview">
+                  {externalPrompt.slice(0, 200)}{externalPrompt.length > 200 ? '\u2026' : ''}
+                </div>
+                <p className="path-wizard__external-hint">
+                  {t('pathWizard.externalHint')}
+                </p>
+                <div className="path-wizard__external-actions">
+                  <button type="button" className="btn btn-primary btn-sm" onClick={handleCopyAndOpen}>
+                    {t('pathWizard.copyAndOpen')}
+                  </button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setExternalFlow(null)}>
+                    {t('pathWizard.back')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="path-wizard__external-copied">
+                  <p className="path-wizard__external-copied-title">{t('pathWizard.promptCopied')}</p>
+                  <p className="path-wizard__external-hint">
+                    {t('pathWizard.pasteHint', { target: externalFlow.target === 'claude' ? 'Claude' : 'ChatGPT' })}
+                  </p>
+                  <kbd className="path-wizard__kbd">{pasteShortcut}</kbd>
+                </div>
+                <p className="path-wizard__external-hint">
+                  {t('pathWizard.importAfter')}
+                </p>
+                <div className="path-wizard__external-actions">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={handleCopyAgain}>
+                    {t('pathWizard.copyAgain')}
+                  </button>
+                  {onShowImport && (
+                    <button type="button" className="btn btn-primary btn-sm" onClick={onShowImport}>
+                      {t('pathWizard.goToImport')}
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setExternalFlow(null)}>
+                    {t('pathWizard.done')}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="path-wizard__external-buttons">
+            <p className="path-wizard__external-desc">{t('pathWizard.externalDesc')}</p>
+            <div className="path-wizard__external-row">
+              <button type="button" className="path-wizard__external-btn" onClick={() => setExternalFlow({ target: 'claude', step: 'preview' })}>
+                {t('pathWizard.designInClaude')}
+              </button>
+              <button type="button" className="path-wizard__external-btn" onClick={() => setExternalFlow({ target: 'chatgpt', step: 'preview' })}>
+                {t('pathWizard.designInChatGPT')}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </form>
