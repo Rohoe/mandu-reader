@@ -2,7 +2,7 @@ import { getLessonTitle } from '../../lib/languages';
 import { useT } from '../../i18n';
 import GenerationProgress from '../GenerationProgress';
 
-export default function ReaderGeneratingState({ lessonMeta, langId }) {
+export default function ReaderGeneratingState({ lessonMeta, langId, targetLength }) {
   const t = useT();
   return (
     <div className="reader-view reader-view--generating">
@@ -14,7 +14,7 @@ export default function ReaderGeneratingState({ lessonMeta, langId }) {
             <p className="reader-view__lesson-en font-display text-muted">{lessonMeta.title_en}</p>
           </>
         )}
-        <GenerationProgress type="reader" />
+        <GenerationProgress type="reader" targetLength={targetLength} langId={langId} />
       </div>
     </div>
   );

@@ -3,6 +3,48 @@
  */
 
 /**
+ * Leech factor — reduces interval growth for cards with many lapses.
+ * 0 lapses = 1.0 (no change), 3 lapses = 0.7, 5+ lapses = 0.5 (floor).
+ */
+function leechFactor(lapses) {
+  return Math.max(0.5, 1 - 0.1 * lapses);
+}
+
+/**
+ * Returns true if a card is a "leech" — repeatedly forgotten (3+ lapses).
+ */
+export function isLeech(word, direction = 'forward') {
+  const prefix = direction === 'reverse' ? 'reverse' : '';
+  const key = (field) => prefix ? `${prefix}${field.charAt(0).toUpperCase()}${field.slice(1)}` : field;
+  return (word[key('lapses')] ?? 0) >= 3;
+}
+
+/**
+ * Count cards due for review without building a full session.
+ */
+export function countDueCards(learnedVocabulary, langId) {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const nowMs = now.getTime();
+  let count = 0;
+
+  for (const [, info] of Object.entries(learnedVocabulary || {})) {
+    if (langId && (info.langId || 'zh') !== langId) continue;
+    // Forward due
+    if ((info.reviewCount ?? 0) > 0) {
+      const nr = info.nextReview ? new Date(info.nextReview).getTime() : null;
+      if (nr === null || nr <= nowMs) count++;
+    }
+    // Reverse due
+    if ((info.reviewCount ?? 0) >= 1 && (info.reverseReviewCount ?? 0) > 0) {
+      const rr = info.reverseNextReview ? new Date(info.reverseNextReview).getTime() : null;
+      if (rr === null || rr <= nowMs) count++;
+    }
+  }
+  return count;
+}
+
+/**
  * Calculate updated SRS fields after a judgment.
  * @param {'got'|'almost'|'missed'} judgment
  * @param {object} word - Current vocab entry (may have SRS fields or not)
@@ -21,14 +63,17 @@ export function calculateSRS(judgment, word, direction = 'forward') {
   let newInterval, newEase, newLapses;
 
   switch (judgment) {
-    case 'got':
-      newInterval = interval === 0 ? 1 : interval === 1 ? 3 : Math.round(interval * ease);
+    case 'got': {
+      const factor = leechFactor(lapses);
+      const rawInterval = interval === 0 ? 1 : interval === 1 ? 3 : Math.round(interval * ease);
+      newInterval = Math.max(1, Math.round(rawInterval * factor));
       newEase = Math.min(ease + 0.1, 3.0);
       newLapses = lapses;
       break;
+    }
     case 'almost':
-      newInterval = 1;
-      newEase = ease;
+      newInterval = 2;
+      newEase = Math.max(ease - 0.05, 1.3);
       newLapses = lapses;
       break;
     case 'missed':

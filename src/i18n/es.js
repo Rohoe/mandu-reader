@@ -305,6 +305,62 @@ export default {
   'reader.actions.archiveReader': 'Archivar lector',
   'reader.actions.deleteReader': 'Eliminar lector',
   'reader.actions.confirmDelete': '¿Eliminar permanentemente este lector?',
+
+  // ── Difficulty feedback ──────────────────────────────────────
+  'reader.feedback.howWas': '¿Cómo fue la dificultad?',
+  'reader.feedback.tooEasy': 'Demasiado fácil',
+  'reader.feedback.justRight': 'Perfecto',
+  'reader.feedback.tooDifficult': 'Demasiado difícil',
+  'reader.feedback.thanks': '¡Gracias! Los próximos lectores se ajustarán.',
+
+  // ── Next actions ─────────────────────────────────────────────
+  'nextAction.title': '¿Qué sigue?',
+  'nextAction.dueFlashcards': '{count} tarjetas pendientes de revisión',
+  'nextAction.continueLesson': 'Continuar: {topic}',
+  'nextAction.streakProtection': '¡Mantén tu racha de {count} días!',
+  'nextAction.practiceStruggling': 'Practicar {count} palabras difíciles',
+  'nextAction.createNew': 'Crear un nuevo lector',
+  'nextAction.reviewGrammar': 'Repasar gramática',
+
+  // ── Milestones ───────────────────────────────────────────────
+  'milestone.vocabCount': '¡{count} palabras aprendidas!',
+  'milestone.vocabSub': 'Tu vocabulario está creciendo',
+  'milestone.streak': '¡Racha de {count} días!',
+  'milestone.streakSub': 'La constancia es clave',
+  'milestone.firstLesson': '¡Primera lección completada!',
+  'milestone.firstLessonSub': 'Tu viaje de aprendizaje ha comenzado',
+  'milestone.firstQuiz': '¡Primer quiz calificado!',
+  'milestone.firstQuizSub': 'Los tests refuerzan la retención',
+  'milestone.firstSyllabus': '¡Primer curso creado!',
+  'milestone.firstSyllabusSub': 'Aprendizaje estructurado desbloqueado',
+
+  // ── Generation progress enhancements ──────────────────────────
+  'progress.timeRemaining': '~{seconds}s',
+  'progress.generatingStory': 'Generando historia de ~{count} caracteres…',
+  'progress.tip1': 'Consejo: Revisa las tarjetas diariamente para mejor retención',
+  'progress.tip2': 'Consejo: Leer en voz alta ayuda con la pronunciación',
+  'progress.tip3': 'Consejo: Marca las palabras difíciles para practicar más',
+  'progress.tip4': 'Consejo: Prueba el tutor IA para hacer preguntas sobre la historia',
+  'progress.tip5': 'Consejo: Exporta vocabulario a Anki para repasar sin conexión',
+
+  // ── Flashcard enhancements ───────────────────────────────────
+  'flashcard.leechBadge': 'Difícil',
+  'flashcard.leechHint': 'Esta tarjeta se ha fallado varias veces',
+
+  // ── Grammar active recall ────────────────────────────────────
+  'grammar.modeClassic': 'Clásico',
+  'grammar.modeCloze': 'Completar',
+  'grammar.modeBuild': 'Construir',
+  'grammar.modeClassicDesc': 'Voltea tarjetas para repasar patrones',
+  'grammar.modeClozeDesc': 'Completa la gramática faltante',
+  'grammar.modeBuildDesc': 'Ordena las fichas para formar oraciones',
+  'grammar.fillPrompt': 'Completa el espacio en blanco:',
+  'grammar.hintLabel': 'Pista gramatical:',
+  'grammar.buildPrompt': 'Ordena las palabras para formar una oración correcta:',
+  'grammar.noEligible': 'No hay tarjetas disponibles para este modo',
+  'grammar.tryClassic': 'Prueba el modo Clásico',
+  'grammar.correctAnswer': 'Respuesta correcta: {answer}',
+
   'story.clickToTranslate': 'Haz clic para traducir',
   'story.stop': 'Detener',
   'story.listen': 'Escuchar',

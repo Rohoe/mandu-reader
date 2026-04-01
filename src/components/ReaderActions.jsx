@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useT } from '../i18n';
 
-export default function ReaderActions({ isDemo, isCompleted, onMarkComplete, onUnmarkComplete, lessonKey, confirmRegen, setConfirmRegen, handleRegenConfirm, onContinueStory, reader, lessonMeta, isPending, langId, onArchive, onDelete }) {
+export default function ReaderActions({ isDemo, isCompleted, onMarkComplete, onUnmarkComplete, lessonKey, confirmRegen, setConfirmRegen, handleRegenConfirm, onContinueStory, reader, lessonMeta, isPending, langId, onArchive, onDelete, onDifficultyFeedback, hasFeedback, nextActions }) {
   const t = useT();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const isStandalone = lessonKey?.startsWith('standalone_');
@@ -22,6 +22,24 @@ export default function ReaderActions({ isDemo, isCompleted, onMarkComplete, onU
           )}
         </div>
       )}
+
+      {/* Difficulty feedback */}
+      {isCompleted && onDifficultyFeedback && !hasFeedback && (
+        <div className="reader-view__feedback-row">
+          <span className="reader-view__feedback-label text-muted">{t('reader.feedback.howWas')}</span>
+          <div className="reader-view__feedback-pills">
+            <button className="reader-view__feedback-pill" onClick={() => onDifficultyFeedback('too_easy')}>{t('reader.feedback.tooEasy')}</button>
+            <button className="reader-view__feedback-pill reader-view__feedback-pill--active" onClick={() => onDifficultyFeedback('just_right')}>{t('reader.feedback.justRight')}</button>
+            <button className="reader-view__feedback-pill" onClick={() => onDifficultyFeedback('too_difficult')}>{t('reader.feedback.tooDifficult')}</button>
+          </div>
+        </div>
+      )}
+      {isCompleted && hasFeedback && (
+        <p className="reader-view__feedback-thanks text-muted">{t('reader.feedback.thanks')}</p>
+      )}
+
+      {/* Next action suggestions (post-lesson) */}
+      {isCompleted && nextActions}
 
       {/* Regenerate */}
       {!isDemo && (

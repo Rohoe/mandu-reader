@@ -75,6 +75,12 @@ export const CLEAR_ERROR = 'CLEAR_ERROR';
 export const SET_NOTIFICATION = 'SET_NOTIFICATION';
 export const CLEAR_NOTIFICATION = 'CLEAR_NOTIFICATION';
 
+// ── Difficulty Feedback ──────────────────────────────────────
+export const RECORD_DIFFICULTY_FEEDBACK = 'RECORD_DIFFICULTY_FEEDBACK';
+
+// ── Milestones ──────────────────────────────────────────────
+export const MARK_MILESTONE_SHOWN = 'MARK_MILESTONE_SHOWN';
+
 // ── Preferences ───────────────────────────────────────────────
 export const SET_MAX_TOKENS = 'SET_MAX_TOKENS';
 export const SET_DEFAULT_LEVEL = 'SET_DEFAULT_LEVEL';
@@ -133,4 +139,5 @@ export const DATA_ACTIONS = new Set([
   ADD_VOCABULARY, CLEAR_VOCABULARY, UPDATE_VOCAB_SRS,
   ADD_EXPORTED_WORDS, CLEAR_EXPORTED_WORDS,
   ADD_GRAMMAR, UPDATE_GRAMMAR_SRS, CLEAR_GRAMMAR,
+  RECORD_DIFFICULTY_FEEDBACK,
 ]);

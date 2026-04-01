@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useContext } from 'react';
+import { useEffect, useRef, useState, useContext, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '../../context/useAppSelector';
 import { AppContext } from '../../context/AppContext';
 import { actions } from '../../context/actions';
@@ -7,7 +7,9 @@ import { getLang, getLessonTitle, DEFAULT_LANG_ID } from '../../lib/languages';
 import { buildLLMConfig } from '../../lib/llmConfig';
 import { getProvider } from '../../lib/providers';
 import { translateText } from '../../lib/translate';
+import { getNextActions } from '../../lib/nextActions';
 import { useT } from '../../i18n';
+import NextActionSuggestion from '../NextActionSuggestion';
 import { useTTS } from '../../hooks/useTTS';
 import { useRomanization } from '../../hooks/useRomanization';
 import { useVocabPopover } from '../../hooks/useVocabPopover';
@@ -33,7 +35,7 @@ import ReaderPregenerate from './ReaderPregenerate';
 import ChatSummary from '../TutorChat/ChatSummary';
 import './ReaderView.css';
 
-export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComplete, onUnmarkComplete, isCompleted, onContinueStory, onOpenSidebar, onOpenSettings, onOpenChat, onArchive, onDelete }) {
+export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComplete, onUnmarkComplete, isCompleted, onContinueStory, onOpenSidebar, onOpenSettings, onOpenChat, onArchive, onDelete, onShowFlashcards, onShowNewForm, onSelectLesson }) {
   const t = useT();
   // Track which lesson keys we've already tried to load from cache
   const loadedKeysRef = useRef(new Set());
@@ -46,16 +48,26 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
     ttsVoiceURIs: s.ttsVoiceURIs, ttsSpeechRate: s.ttsSpeechRate,
     romanizationOn: s.romanizationOn, translateButtons: s.translateButtons,
   }));
-  const { providerKeys, activeProvider, activeModels, customBaseUrl, maxTokens, useStructuredOutput, nativeLang } = useAppSelector(s => ({
+  const { providerKeys, activeProvider, activeModels, customBaseUrl, maxTokens, useStructuredOutput, nativeLang, difficultyFeedback } = useAppSelector(s => ({
     providerKeys: s.providerKeys, activeProvider: s.activeProvider, activeModels: s.activeModels, customBaseUrl: s.customBaseUrl,
     maxTokens: s.maxTokens, useStructuredOutput: s.useStructuredOutput, nativeLang: s.nativeLang || 'en',
+    difficultyFeedback: s.difficultyFeedback,
   }));
   const dispatch = useAppDispatch();
   const { restoreEvictedReader } = useContext(AppContext);
   const act = actions(dispatch);
   const isPending = !!(lessonKey && pendingReaders[lessonKey]);
 
-  const { standaloneReaders } = useAppSelector(s => ({ standaloneReaders: s.standaloneReaders }));
+  const { standaloneReaders, syllabi, syllabusProgress, learnedGrammar } = useAppSelector(s => ({
+    standaloneReaders: s.standaloneReaders,
+    syllabi: s.syllabi,
+    syllabusProgress: s.syllabusProgress,
+    learnedGrammar: s.learnedGrammar,
+  }));
+  const postLessonActions = useMemo(() => {
+    if (!isCompleted) return [];
+    return getNextActions({ learnedVocabulary, learnedGrammar, syllabi, syllabusProgress, standaloneReaders, generatedReaders, learningActivity }, { context: 'post-lesson', maxResults: 2 });
+  }, [isCompleted, learnedVocabulary, learnedGrammar, syllabi, syllabusProgress, standaloneReaders, generatedReaders, learningActivity]);
   const reader = generatedReaders[lessonKey];
   // For plan activities: reader metadata lives in standaloneReaders, not generatedReaders
   const standaloneMeta = (!reader && !lessonMeta && lessonKey)
@@ -174,7 +186,7 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
   const llmConfig = buildLLMConfig({ providerKeys, activeProvider, activeModels, customBaseUrl });
   const { handleGenerate, streamingText } = useReaderGeneration({
     lessonKey, lessonMeta, reader: reader || standaloneMeta, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput, nativeLang,
-    syllabus, generatedReaders, learningActivity,
+    syllabus, generatedReaders, learningActivity, difficultyFeedback,
   });
 
   // Cancel speech & close popovers when lesson changes
@@ -280,7 +292,7 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
 
   // ── Generating (non-streaming) ─────────────────────────────
   if (!reader && isPending) {
-    return <ReaderGeneratingState lessonMeta={lessonMeta} langId={langId} />;
+    return <ReaderGeneratingState lessonMeta={lessonMeta} langId={langId} targetLength={readerLength} />;
   }
 
   // ── Evicted (archived) reader ───────────────────────────────
@@ -454,6 +466,19 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
         langId={langId}
         onArchive={onArchive}
         onDelete={onDelete}
+        onDifficultyFeedback={(rating) => {
+          const level = reader?.level ?? lessonMeta?.level ?? 3;
+          act.recordDifficultyFeedback(langId, rating, level, lessonKey);
+        }}
+        hasFeedback={!!(difficultyFeedback?.[langId] || []).find(e => e.lessonKey === lessonKey)}
+        nextActions={postLessonActions.length > 0 ? (
+          <NextActionSuggestion
+            actions={postLessonActions}
+            onShowFlashcards={onShowFlashcards}
+            onSelectLesson={onSelectLesson}
+            onShowNewForm={onShowNewForm}
+          />
+        ) : null}
       />
     </article>
   );

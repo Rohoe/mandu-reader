@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppSelector } from '../context/useAppSelector';
 import { useT } from '../i18n';
 import { getProvider } from '../lib/providers';
@@ -24,7 +24,15 @@ function buildPhases(type, providerName, t) {
   ];
 }
 
-export default function GenerationProgress({ type = 'reader' }) {
+const TIPS = [
+  'progress.tip1',
+  'progress.tip2',
+  'progress.tip3',
+  'progress.tip4',
+  'progress.tip5',
+];
+
+export default function GenerationProgress({ type = 'reader', targetLength, langId }) {
   const activeProvider = useAppSelector(s => s.activeProvider);
   const t = useT();
   const providerDef = getProvider(activeProvider);
@@ -34,6 +42,9 @@ export default function GenerationProgress({ type = 'reader' }) {
 
   const [phaseIdx, setPhaseIdx] = useState(0);
   const [pct, setPct]           = useState(0);
+  const startTimeRef = useRef(Date.now());
+  const [secondsRemaining, setSecondsRemaining] = useState(null);
+  const [tipIdx, setTipIdx] = useState(0);
 
   // Kick off first phase immediately, then advance on timers
   useEffect(() => {
@@ -56,6 +67,25 @@ export default function GenerationProgress({ type = 'reader' }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Estimated time remaining
+  useEffect(() => {
+    const totalEstimatedMs = phases.reduce((sum, p) => sum + p.ms, 0) - phases[phases.length - 1].ms; // exclude the "waiting" phase
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const remaining = Math.max(0, Math.round((totalEstimatedMs - elapsed) / 1000));
+      setSecondsRemaining(remaining);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phases]);
+
+  // Rotate tips every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIdx(i => (i + 1) % TIPS.length);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const label = phases[phaseIdx]?.label ?? t('progress.working');
 
   return (
@@ -74,6 +104,13 @@ export default function GenerationProgress({ type = 'reader' }) {
         />
       </div>
       <p className="gen-progress__label">{label}</p>
+      {secondsRemaining !== null && secondsRemaining > 0 && (
+        <p className="gen-progress__time text-muted">{t('progress.timeRemaining', { seconds: secondsRemaining })}</p>
+      )}
+      {targetLength && phaseIdx === 0 && (
+        <p className="gen-progress__target text-muted">{t('progress.generatingStory', { count: targetLength })}</p>
+      )}
+      <p className="gen-progress__tip text-muted">{t(TIPS[tipIdx])}</p>
     </div>
   );
 }

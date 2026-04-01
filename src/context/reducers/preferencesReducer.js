@@ -7,6 +7,8 @@ import {
   SET_NATIVE_LANG,
   SET_WEEKLY_GOALS,
   SET_SHOW_ARCHIVED,
+  RECORD_DIFFICULTY_FEEDBACK,
+  MARK_MILESTONE_SHOWN,
 } from '../actionTypes';
 
 export function preferencesReducer(state, action) {
@@ -89,6 +91,26 @@ export function preferencesReducer(state, action) {
         ...(action.payload.langId === 'ko' ? { defaultTopikLevel: action.payload.level } : {}),
         ...(action.payload.langId === 'yue' ? { defaultYueLevel: action.payload.level } : {}),
       };
+
+    case RECORD_DIFFICULTY_FEEDBACK: {
+      const { langId, rating, level, lessonKey } = action.payload;
+      const existing = state.difficultyFeedback[langId] || [];
+      // Dedup by lessonKey
+      const filtered = existing.filter(e => e.lessonKey !== lessonKey);
+      const updated = [...filtered, { rating, level, lessonKey, timestamp: Date.now() }];
+      // Keep rolling window of 10
+      const trimmed = updated.length > 10 ? updated.slice(-10) : updated;
+      return {
+        ...state,
+        difficultyFeedback: { ...state.difficultyFeedback, [langId]: trimmed },
+      };
+    }
+
+    case MARK_MILESTONE_SHOWN: {
+      const newSet = new Set(state.shownMilestones);
+      newSet.add(action.payload);
+      return { ...state, shownMilestones: newSet };
+    }
 
     default:
       return undefined;

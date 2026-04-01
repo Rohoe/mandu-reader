@@ -76,6 +76,8 @@ const KEYS = {
   WEEKLY_GOALS:        'gradedReader_weeklyGoals',
   SHOW_ARCHIVED:       'gradedReader_showArchived',
   LEARNING_PATHS:      'gradedReader_learningPaths',
+  DIFFICULTY_FEEDBACK: 'gradedReader_difficultyFeedback',
+  SHOWN_MILESTONES:    'gradedReader_shownMilestones',
 };
 
 const READER_KEY_PREFIX = 'gradedReader_reader_';
@@ -835,6 +837,26 @@ export function loadWeeklyGoals() {
 
 export function saveWeeklyGoals(goals) {
   save(KEYS.WEEKLY_GOALS, goals);
+}
+
+// ── Difficulty feedback ──────────────────────────────────────
+
+export function loadDifficultyFeedback() {
+  return load(KEYS.DIFFICULTY_FEEDBACK, {});
+}
+
+export function saveDifficultyFeedback(data) {
+  save(KEYS.DIFFICULTY_FEEDBACK, data);
+}
+
+// ── Shown milestones ────────────────────────────────────────
+
+export function loadShownMilestones() {
+  return load(KEYS.SHOWN_MILESTONES, []);
+}
+
+export function saveShownMilestones(set) {
+  save(KEYS.SHOWN_MILESTONES, [...set]);
 }
 
 // ── Show archived preference ─────────────────────────────────

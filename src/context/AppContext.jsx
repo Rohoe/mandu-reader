@@ -68,6 +68,8 @@ import {
   loadNativeLang,
   loadShowArchived,
   loadLearningPaths,
+  loadDifficultyFeedback,
+  loadShownMilestones,
   setDirectoryHandle,
 } from '../lib/storage';
 import {
@@ -161,6 +163,10 @@ function buildInitialState() {
     learningActivity:  loadLearningActivity(),
     // Reading time log (timestamped sessions, persisted)
     readingTimeLog:    loadReadingTimeLog(),
+    // Difficulty feedback (per-language rolling window)
+    difficultyFeedback: loadDifficultyFeedback(),
+    // Shown milestones (Set of milestone IDs)
+    shownMilestones:   new Set(loadShownMilestones()),
     // Weekly goals (persisted)
     weeklyGoals:       loadWeeklyGoals(),
     // Cloud sync

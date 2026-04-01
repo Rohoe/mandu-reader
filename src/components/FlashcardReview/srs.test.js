@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { calculateSRS, getNextReviewDate, sortCardsBySRS, getMasteryLevel, buildDailySession } from './srs';
+import { calculateSRS, getNextReviewDate, sortCardsBySRS, getMasteryLevel, buildDailySession, isLeech, countDueCards } from './srs';
 
 describe('calculateSRS', () => {
   it('should advance interval on "got" from 0 to 1', () => {
@@ -26,10 +26,10 @@ describe('calculateSRS', () => {
     expect(result.ease).toBe(3.0);
   });
 
-  it('should reset interval to 1 on "almost"', () => {
+  it('should reset interval to 2 on "almost" with slight ease penalty', () => {
     const result = calculateSRS('almost', { interval: 10, ease: 2.5, reviewCount: 5 });
-    expect(result.interval).toBe(1);
-    expect(result.ease).toBe(2.5); // unchanged
+    expect(result.interval).toBe(2);
+    expect(result.ease).toBe(2.45); // slight penalty
     expect(result.lapses).toBe(0); // unchanged
     expect(result.reviewCount).toBe(6);
   });
@@ -246,5 +246,96 @@ describe('buildDailySession', () => {
     const session = buildDailySession(cards, 10, null, 'zh');
     // Both forward due + reverse new should be present
     expect(session.cardDirections.filter(d => d === 'reverse').length).toBeGreaterThan(0);
+  });
+});
+
+describe('adaptive SRS: leech factor', () => {
+  it('should not reduce interval for 0 lapses', () => {
+    const result = calculateSRS('got', { interval: 3, ease: 2.5, reviewCount: 5, lapses: 0 });
+    expect(result.interval).toBe(8); // 3 * 2.5 = 7.5 → 8
+  });
+
+  it('should reduce interval at 3 lapses (factor 0.7)', () => {
+    const result = calculateSRS('got', { interval: 3, ease: 2.5, reviewCount: 5, lapses: 3 });
+    // rawInterval = round(3 * 2.5) = 8, factor = 0.7, result = round(8 * 0.7) = 6
+    expect(result.interval).toBe(6);
+  });
+
+  it('should floor at factor 0.5 for 5+ lapses', () => {
+    const result = calculateSRS('got', { interval: 3, ease: 2.5, reviewCount: 5, lapses: 5 });
+    // rawInterval = 8, factor = 0.5, result = round(8 * 0.5) = 4
+    expect(result.interval).toBe(4);
+  });
+
+  it('should floor at factor 0.5 for 10 lapses', () => {
+    const result = calculateSRS('got', { interval: 3, ease: 2.5, reviewCount: 5, lapses: 10 });
+    expect(result.interval).toBe(4); // same floor
+  });
+
+  it('should handle missing lapses field (backward compat)', () => {
+    const result = calculateSRS('got', { interval: 3, ease: 2.5, reviewCount: 5 });
+    // lapses defaults to 0 → factor 1.0
+    expect(result.interval).toBe(8);
+  });
+});
+
+describe('adaptive SRS: almost changes', () => {
+  it('should set interval to 2 on almost', () => {
+    const result = calculateSRS('almost', { interval: 10, ease: 2.5, reviewCount: 5, lapses: 0 });
+    expect(result.interval).toBe(2);
+  });
+
+  it('should slightly decrease ease on almost', () => {
+    const result = calculateSRS('almost', { interval: 10, ease: 2.5, reviewCount: 5, lapses: 0 });
+    expect(result.ease).toBe(2.45);
+  });
+
+  it('should not decrease ease below 1.3 on almost', () => {
+    const result = calculateSRS('almost', { interval: 10, ease: 1.3, reviewCount: 5, lapses: 0 });
+    expect(result.ease).toBe(1.3);
+  });
+});
+
+describe('isLeech', () => {
+  it('should return true for 3+ lapses', () => {
+    expect(isLeech({ lapses: 3 })).toBe(true);
+    expect(isLeech({ lapses: 5 })).toBe(true);
+  });
+
+  it('should return false for <3 lapses', () => {
+    expect(isLeech({ lapses: 0 })).toBe(false);
+    expect(isLeech({ lapses: 2 })).toBe(false);
+  });
+
+  it('should check reverse direction', () => {
+    expect(isLeech({ reverseLapses: 4 }, 'reverse')).toBe(true);
+    expect(isLeech({ reverseLapses: 1 }, 'reverse')).toBe(false);
+  });
+
+  it('should default missing lapses to 0', () => {
+    expect(isLeech({})).toBe(false);
+  });
+});
+
+describe('countDueCards', () => {
+  it('should count forward and reverse due cards', () => {
+    const vocab = {
+      hello: { reviewCount: 3, nextReview: '2020-01-01', reverseReviewCount: 1, reverseNextReview: '2020-01-01', langId: 'zh' },
+      world: { reviewCount: 1, nextReview: '2099-01-01', langId: 'zh' },
+    };
+    expect(countDueCards(vocab, 'zh')).toBe(2); // hello forward + hello reverse
+  });
+
+  it('should filter by langId', () => {
+    const vocab = {
+      hello: { reviewCount: 3, nextReview: '2020-01-01', langId: 'zh' },
+      bonjour: { reviewCount: 3, nextReview: '2020-01-01', langId: 'fr' },
+    };
+    expect(countDueCards(vocab, 'zh')).toBe(1);
+  });
+
+  it('should return 0 for empty vocab', () => {
+    expect(countDueCards({}, 'zh')).toBe(0);
+    expect(countDueCards(null, 'zh')).toBe(0);
   });
 });

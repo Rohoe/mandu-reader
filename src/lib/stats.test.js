@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { computeStats, getStreak, getFlashcardStreak, getWordsByPeriod, buildLearnerContext, buildLearnerProfile, buildGradingContext, buildReviewContext, getLevelUpRecommendation } from './stats';
+import { computeStats, getStreak, getFlashcardStreak, getWordsByPeriod, buildLearnerContext, buildLearnerProfile, buildGradingContext, buildReviewContext, getLevelUpRecommendation, computeDifficultyCalibration } from './stats';
 
 // ── buildLearnerContext ───────────────────────────────────────
 
@@ -837,5 +837,76 @@ describe('getFlashcardStreak', () => {
       { type: 'flashcard_reviewed', timestamp: today.getTime() },
       { type: 'quiz_graded', timestamp: yesterday.getTime() },
     ])).toBe(1);
+  });
+});
+
+// ── computeDifficultyCalibration ────────────────────────────────
+
+describe('computeDifficultyCalibration', () => {
+  it('returns 0 for empty entries', () => {
+    expect(computeDifficultyCalibration([], 3)).toBe(0);
+    expect(computeDifficultyCalibration(null, 3)).toBe(0);
+  });
+
+  it('returns positive for all too_easy ratings', () => {
+    const entries = [
+      { rating: 'too_easy', level: 3 },
+      { rating: 'too_easy', level: 3 },
+    ];
+    const result = computeDifficultyCalibration(entries, 3);
+    expect(result).toBeGreaterThan(0.5);
+  });
+
+  it('returns negative for all too_difficult ratings', () => {
+    const entries = [
+      { rating: 'too_difficult', level: 3 },
+      { rating: 'too_difficult', level: 3 },
+    ];
+    const result = computeDifficultyCalibration(entries, 3);
+    expect(result).toBeLessThan(-0.5);
+  });
+
+  it('returns ~0 for all just_right ratings', () => {
+    const entries = [
+      { rating: 'just_right', level: 3 },
+      { rating: 'just_right', level: 3 },
+    ];
+    const result = computeDifficultyCalibration(entries, 3);
+    expect(result).toBe(0);
+  });
+
+  it('only considers entries matching current level', () => {
+    const entries = [
+      { rating: 'too_easy', level: 2 },
+      { rating: 'too_difficult', level: 3 },
+    ];
+    const result = computeDifficultyCalibration(entries, 3);
+    expect(result).toBeLessThan(0); // only the level-3 entry counts
+  });
+
+  it('weights recent ratings more heavily', () => {
+    const entries = [
+      { rating: 'too_difficult', level: 3 },
+      { rating: 'too_easy', level: 3 },
+      { rating: 'too_easy', level: 3 },
+    ];
+    const result = computeDifficultyCalibration(entries, 3);
+    expect(result).toBeGreaterThan(0); // recent too_easy entries dominate
+  });
+
+  it('buildLearnerContext includes calibration text', () => {
+    const vocab = {};
+    for (let i = 0; i < 10; i++) {
+      vocab[`word${i}`] = { langId: 'zh', reviewCount: 3, interval: 5, lapses: 0, dateAdded: new Date().toISOString() };
+    }
+    const feedback = {
+      zh: [
+        { rating: 'too_easy', level: 3 },
+        { rating: 'too_easy', level: 3 },
+        { rating: 'too_easy', level: 3 },
+      ],
+    };
+    const result = buildLearnerContext(vocab, {}, [], 'zh', { difficultyFeedback: feedback, currentLevel: 3 });
+    expect(result).toContain('easy');
   });
 });

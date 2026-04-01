@@ -9,7 +9,7 @@ import { buildLearnerContext } from '../lib/stats';
 import { buildNarrativeContext } from '../prompts/narrativeReaderPrompt';
 import { useStreamAccumulator } from './useStreamAccumulator';
 
-export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput = false, nativeLang = 'en', syllabus, generatedReaders, learningActivity }) {
+export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput = false, nativeLang = 'en', syllabus, generatedReaders, learningActivity, difficultyFeedback }) {
   const dispatch = useAppDispatch();
   const { pushGeneratedReader } = useContext(AppContext);
   const act = actions(dispatch);
@@ -92,8 +92,11 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
       }
     }
 
-    // Adaptive learner context from SRS/quiz history
-    const learnerCtx = buildLearnerContext(learnedVocabulary, generatedReaders, learningActivity, readerLangId);
+    // Adaptive learner context from SRS/quiz history + difficulty calibration
+    const learnerCtx = buildLearnerContext(learnedVocabulary, generatedReaders, learningActivity, readerLangId, {
+      difficultyFeedback,
+      currentLevel: level,
+    });
     if (learnerCtx) genOptions.learnerContext = learnerCtx;
 
 
@@ -132,7 +135,7 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
       act.clearPendingReader(lessonKey);
       if (abortRef.current === controller) abortRef.current = null;
     }
-  }, [isPending, lessonKey, lessonMeta, reader, langId, llmConfig, learnedVocabulary, readerLength, maxTokens, useStructuredOutput, nativeLang, act, pushGeneratedReader, syllabus, generatedReaders, learningActivity]);
+  }, [isPending, lessonKey, lessonMeta, reader, langId, llmConfig, learnedVocabulary, readerLength, maxTokens, useStructuredOutput, nativeLang, act, pushGeneratedReader, syllabus, generatedReaders, learningActivity, difficultyFeedback]);
 
   return { handleGenerate, act, streamingText };
 }

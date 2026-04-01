@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useT } from '../../i18n';
 import { loadGrammarSession, saveGrammarSession } from '../../lib/storage';
-import { calculateSRS, buildDailySession } from './srs';
+import { calculateSRS, buildDailySession, isLeech } from './srs';
 import { useMasteryStats } from './useMasteryStats';
 import FlashcardDoneScreen from './FlashcardDoneScreen';
+import GrammarClozeMode from './GrammarClozeMode';
+import GrammarSentenceBuilderMode from './GrammarSentenceBuilderMode';
 
 function formatInterval(days) {
   if (days <= 0) return '<1d';
@@ -15,9 +17,11 @@ function formatInterval(days) {
 /**
  * GrammarReviewMode — self-contained grammar SRS review.
  * Reuses calculateSRS and buildDailySession from srs.js.
+ * Supports 3 modes: Classic (flip cards), Cloze (fill blanks), Build (arrange tiles).
  */
 export default function GrammarReviewMode({ cards, langId, newCardsPerDay, act, onClose, onBack }) {
   const t = useT();
+  const [grammarMode, setGrammarMode] = useState('classic');
 
   // Map grammar cards to the shape expected by buildDailySession / calculateSRS
   const sessionCards = useMemo(() =>
@@ -254,8 +258,48 @@ export default function GrammarReviewMode({ cards, langId, newCardsPerDay, act, 
         <span className="flashcard-stat-badge flashcard-stat-badge--total">{t('flashcard.total', { count: sessionCards.length })}</span>
       </div>
 
-      {/* Card */}
+      {/* Grammar mode picker */}
+      <div className="flashcard-mode-picker" style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+        {['classic', 'cloze', 'build'].map(mode => (
+          <button
+            key={mode}
+            className={`btn btn-sm ${grammarMode === mode ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setGrammarMode(mode)}
+          >
+            {t(`grammar.mode${mode.charAt(0).toUpperCase() + mode.slice(1)}`)}
+          </button>
+        ))}
+      </div>
+
+      {/* Cloze mode */}
+      {grammarMode === 'cloze' && (
+        <GrammarClozeMode
+          cards={sessionCards}
+          session={session}
+          langId={langId}
+          act={act}
+          onSessionUpdate={(newSession, newPhase) => { setSession(newSession); setPhase(newPhase); }}
+        />
+      )}
+
+      {/* Build mode */}
+      {grammarMode === 'build' && (
+        <GrammarSentenceBuilderMode
+          cards={sessionCards}
+          session={session}
+          langId={langId}
+          act={act}
+          onSessionUpdate={(newSession, newPhase) => { setSession(newSession); setPhase(newPhase); }}
+        />
+      )}
+
+      {/* Classic mode card */}
+      {grammarMode === 'classic' && (
       <div className="flashcard-card" data-lang={currentCard?.langId}>
+        {/* Leech badge */}
+        {currentCard && isLeech(currentCard) && (
+          <span className="flashcard-leech-badge" title={t('flashcard.leechHint')}>{t('flashcard.leechBadge')}</span>
+        )}
         {/* Progress */}
         <div className="flashcard-progress text-muted" style={{ textAlign: 'center', marginBottom: 'var(--space-2)' }}>
           {cardIdx + 1} / {totalCards}
@@ -320,6 +364,7 @@ export default function GrammarReviewMode({ cards, langId, newCardsPerDay, act, 
           </div>
         )}
       </div>
+      )}
     </>
   );
 }

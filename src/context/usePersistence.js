@@ -43,6 +43,8 @@ import {
   saveReadingTimeLog,
   saveWeeklyGoals,
   saveShowArchived,
+  saveDifficultyFeedback,
+  saveShownMilestones,
   saveCloudLastSynced,
   saveReaderSafe,
   deleteReader,
@@ -99,6 +101,8 @@ const PERSISTENCE_MAP = [
   { key: 'useStructuredOutput', save: saveStructuredOutput },
   { key: 'newCardsPerDay', save: saveNewCardsPerDay },
   { key: 'showArchived', save: saveShowArchived },
+  { key: 'difficultyFeedback', save: saveDifficultyFeedback },
+  { key: 'shownMilestones', save: saveShownMilestones },
   { key: 'cloudLastSynced', save: saveCloudLastSynced },
   { key: 'lastModified', save: saveLastModified },
 ];

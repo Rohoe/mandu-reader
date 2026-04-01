@@ -17,6 +17,7 @@ export function dataReducer(state, action, buildInitialState) {
       const restoredGrammar = d.learnedGrammar || d.learned_grammar || {};
       const restoredExported = d.exportedWords || d.exported_words || [];
       const restoredPaths = d.learningPaths || d.learning_paths || [];
+      const restoredFeedback = d.difficultyFeedback || d.difficulty_feedback || {};
       return {
         ...state,
         syllabi:           restoredSyllabi,
@@ -27,6 +28,7 @@ export function dataReducer(state, action, buildInitialState) {
         learnedVocabulary: restoredVocab,
         learnedGrammar:    restoredGrammar,
         exportedWords:     new Set(Array.isArray(restoredExported) ? restoredExported : Object.keys(restoredExported)),
+        difficultyFeedback: restoredFeedback,
       };
     }
 

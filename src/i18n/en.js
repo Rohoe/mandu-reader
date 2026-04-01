@@ -358,6 +358,61 @@ export default {
   'reader.actions.deleteReader': 'Delete Reader',
   'reader.actions.confirmDelete': 'Permanently delete this reader?',
 
+  // ── Difficulty feedback ──────────────────────────────────────
+  'reader.feedback.howWas': 'How was the difficulty?',
+  'reader.feedback.tooEasy': 'Too Easy',
+  'reader.feedback.justRight': 'Just Right',
+  'reader.feedback.tooDifficult': 'Too Difficult',
+  'reader.feedback.thanks': 'Thanks! Future readers will be calibrated.',
+
+  // ── Next actions ─────────────────────────────────────────────
+  'nextAction.title': 'What\'s Next?',
+  'nextAction.dueFlashcards': '{count} flashcards due for review',
+  'nextAction.continueLesson': 'Continue: {topic}',
+  'nextAction.streakProtection': 'Keep your {count}-day streak alive!',
+  'nextAction.practiceStruggling': 'Practice {count} struggling words',
+  'nextAction.createNew': 'Create a new reader',
+  'nextAction.reviewGrammar': 'Review grammar patterns',
+
+  // ── Milestones ───────────────────────────────────────────────
+  'milestone.vocabCount': '{count} Words Learned!',
+  'milestone.vocabSub': 'Your vocabulary is growing',
+  'milestone.streak': '{count}-Day Streak!',
+  'milestone.streakSub': 'Consistency is key',
+  'milestone.firstLesson': 'First Lesson Complete!',
+  'milestone.firstLessonSub': 'Your learning journey has begun',
+  'milestone.firstQuiz': 'First Quiz Graded!',
+  'milestone.firstQuizSub': 'Testing builds retention',
+  'milestone.firstSyllabus': 'First Course Created!',
+  'milestone.firstSyllabusSub': 'Structured learning unlocked',
+
+  // ── Generation progress enhancements ──────────────────────────
+  'progress.timeRemaining': '~{seconds}s remaining',
+  'progress.generatingStory': 'Generating ~{count} character story…',
+  'progress.tip1': 'Tip: Review flashcards daily for best retention',
+  'progress.tip2': 'Tip: Reading aloud helps with pronunciation',
+  'progress.tip3': 'Tip: Mark words you struggle with for extra practice',
+  'progress.tip4': 'Tip: Try the AI Tutor to ask questions about the story',
+  'progress.tip5': 'Tip: Export vocabulary to Anki for offline review',
+
+  // ── Flashcard enhancements ───────────────────────────────────
+  'flashcard.leechBadge': 'Struggling',
+  'flashcard.leechHint': 'This card has been missed multiple times',
+
+  // ── Grammar active recall ────────────────────────────────────
+  'grammar.modeClassic': 'Classic',
+  'grammar.modeCloze': 'Cloze',
+  'grammar.modeBuild': 'Build',
+  'grammar.modeClassicDesc': 'Flip cards to review patterns',
+  'grammar.modeClozeDesc': 'Fill in the missing grammar',
+  'grammar.modeBuildDesc': 'Arrange tiles to build sentences',
+  'grammar.fillPrompt': 'Fill in the blank:',
+  'grammar.hintLabel': 'Pattern hint:',
+  'grammar.buildPrompt': 'Arrange the words to form a correct sentence:',
+  'grammar.noEligible': 'No eligible cards for this mode',
+  'grammar.tryClassic': 'Try Classic mode instead',
+  'grammar.correctAnswer': 'Correct answer: {answer}',
+
   // ── Story section ─────────────────────────────────────────────
   'story.clickToTranslate': 'Click to translate',
   'story.stop': 'Stop',

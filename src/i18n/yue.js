@@ -305,6 +305,62 @@ export default {
   'reader.actions.archiveReader': '封存讀物',
   'reader.actions.deleteReader': '刪除讀物',
   'reader.actions.confirmDelete': '永久刪除呢個讀物？',
+
+  // ── Difficulty feedback ──────────────────────────────────────
+  'reader.feedback.howWas': '難度點樣？',
+  'reader.feedback.tooEasy': '太簡單',
+  'reader.feedback.justRight': '啱啱好',
+  'reader.feedback.tooDifficult': '太難喇',
+  'reader.feedback.thanks': '多謝反饋！之後嘅讀物會調整難度。',
+
+  // ── Next actions ─────────────────────────────────────────────
+  'nextAction.title': '跟住做咩好？',
+  'nextAction.dueFlashcards': '{count} 張閃卡要溫',
+  'nextAction.continueLesson': '繼續：{topic}',
+  'nextAction.streakProtection': '保持你 {count} 日嘅連續學習紀錄！',
+  'nextAction.practiceStruggling': '練習 {count} 個困難詞彙',
+  'nextAction.createNew': '建立新讀物',
+  'nextAction.reviewGrammar': '溫習文法',
+
+  // ── Milestones ───────────────────────────────────────────────
+  'milestone.vocabCount': '學咗 {count} 個詞彙！',
+  'milestone.vocabSub': '你嘅詞彙量喺度增長',
+  'milestone.streak': '連續 {count} 日！',
+  'milestone.streakSub': '堅持係關鍵',
+  'milestone.firstLesson': '完成第一課！',
+  'milestone.firstLessonSub': '你嘅學習之旅開始咗',
+  'milestone.firstQuiz': '完成第一次測驗！',
+  'milestone.firstQuizSub': '測試有助記憶',
+  'milestone.firstSyllabus': '建立第一個課程！',
+  'milestone.firstSyllabusSub': '結構化學習已解鎖',
+
+  // ── Generation progress enhancements ──────────────────────────
+  'progress.timeRemaining': '~{seconds}秒',
+  'progress.generatingStory': '正在生成約 {count} 字嘅故事…',
+  'progress.tip1': '提示：每日溫閃卡效果最好',
+  'progress.tip2': '提示：讀出聲有助練習發音',
+  'progress.tip3': '提示：標記困難詞彙加強練習',
+  'progress.tip4': '提示：試吓 AI 導師問故事相關問題',
+  'progress.tip5': '提示：匯出詞彙去 Anki 離線溫習',
+
+  // ── Flashcard enhancements ───────────────────────────────────
+  'flashcard.leechBadge': '困難詞',
+  'flashcard.leechHint': '呢張卡片已經答錯好多次',
+
+  // ── Grammar active recall ────────────────────────────────────
+  'grammar.modeClassic': '經典',
+  'grammar.modeCloze': '填充',
+  'grammar.modeBuild': '造句',
+  'grammar.modeClassicDesc': '翻轉卡片溫習文法',
+  'grammar.modeClozeDesc': '填寫缺少嘅文法',
+  'grammar.modeBuildDesc': '排列詞塊造句',
+  'grammar.fillPrompt': '填寫空白處：',
+  'grammar.hintLabel': '文法提示：',
+  'grammar.buildPrompt': '排列詞語組成正確嘅句子：',
+  'grammar.noEligible': '呢個模式暫時冇可用卡片',
+  'grammar.tryClassic': '試吓經典模式',
+  'grammar.correctAnswer': '正確答案：{answer}',
+
   'story.clickToTranslate': '撳嚟翻譯',
   'story.stop': '停止',
   'story.listen': '聽',

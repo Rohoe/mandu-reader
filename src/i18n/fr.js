@@ -308,6 +308,62 @@ export default {
   'reader.actions.archiveReader': 'Archiver le lecteur',
   'reader.actions.deleteReader': 'Supprimer le lecteur',
   'reader.actions.confirmDelete': 'Supprimer d\u00e9finitivement ce lecteur ?',
+
+  // ── Difficulty feedback ──────────────────────────────────────
+  'reader.feedback.howWas': 'Comment \u00e9tait la difficult\u00e9 ?',
+  'reader.feedback.tooEasy': 'Trop facile',
+  'reader.feedback.justRight': 'Parfait',
+  'reader.feedback.tooDifficult': 'Trop difficile',
+  'reader.feedback.thanks': 'Merci ! Les prochains lecteurs seront ajust\u00e9s.',
+
+  // ── Next actions ─────────────────────────────────────────────
+  'nextAction.title': 'Et maintenant ?',
+  'nextAction.dueFlashcards': '{count} cartes \u00e0 r\u00e9viser',
+  'nextAction.continueLesson': 'Continuer : {topic}',
+  'nextAction.streakProtection': 'Maintenez votre s\u00e9rie de {count} jours !',
+  'nextAction.practiceStruggling': 'Pratiquer {count} mots difficiles',
+  'nextAction.createNew': 'Cr\u00e9er un nouveau lecteur',
+  'nextAction.reviewGrammar': 'R\u00e9viser la grammaire',
+
+  // ── Milestones ───────────────────────────────────────────────
+  'milestone.vocabCount': '{count} mots appris !',
+  'milestone.vocabSub': 'Votre vocabulaire grandit',
+  'milestone.streak': 'S\u00e9rie de {count} jours !',
+  'milestone.streakSub': 'La r\u00e9gularit\u00e9 est la cl\u00e9',
+  'milestone.firstLesson': 'Premi\u00e8re le\u00e7on termin\u00e9e !',
+  'milestone.firstLessonSub': 'Votre parcours d\'apprentissage a commenc\u00e9',
+  'milestone.firstQuiz': 'Premier quiz not\u00e9 !',
+  'milestone.firstQuizSub': 'Les tests renforcent la m\u00e9morisation',
+  'milestone.firstSyllabus': 'Premier cours cr\u00e9\u00e9 !',
+  'milestone.firstSyllabusSub': 'L\'apprentissage structur\u00e9 est d\u00e9bloqu\u00e9',
+
+  // ── Generation progress enhancements ──────────────────────────
+  'progress.timeRemaining': '~{seconds}s',
+  'progress.generatingStory': 'G\u00e9n\u00e9ration d\'une histoire de ~{count} caract\u00e8res\u2026',
+  'progress.tip1': 'Conseil : R\u00e9visez les cartes tous les jours pour mieux retenir',
+  'progress.tip2': 'Conseil : Lire \u00e0 voix haute aide la prononciation',
+  'progress.tip3': 'Conseil : Marquez les mots difficiles pour plus de pratique',
+  'progress.tip4': 'Conseil : Essayez le tuteur IA pour poser des questions sur l\'histoire',
+  'progress.tip5': 'Conseil : Exportez le vocabulaire vers Anki pour r\u00e9viser hors ligne',
+
+  // ── Flashcard enhancements ───────────────────────────────────
+  'flashcard.leechBadge': 'Difficile',
+  'flashcard.leechHint': 'Cette carte a \u00e9t\u00e9 manqu\u00e9e plusieurs fois',
+
+  // ── Grammar active recall ────────────────────────────────────
+  'grammar.modeClassic': 'Classique',
+  'grammar.modeCloze': 'Texte \u00e0 trous',
+  'grammar.modeBuild': 'Construction',
+  'grammar.modeClassicDesc': 'Retournez les cartes pour r\u00e9viser',
+  'grammar.modeClozeDesc': 'Compl\u00e9tez la grammaire manquante',
+  'grammar.modeBuildDesc': 'Arrangez les tuiles pour construire des phrases',
+  'grammar.fillPrompt': 'Compl\u00e9tez le blanc :',
+  'grammar.hintLabel': 'Indice grammatical :',
+  'grammar.buildPrompt': 'Arrangez les mots pour former une phrase correcte :',
+  'grammar.noEligible': 'Aucune carte disponible pour ce mode',
+  'grammar.tryClassic': 'Essayez le mode Classique',
+  'grammar.correctAnswer': 'Bonne r\u00e9ponse : {answer}',
+
   'story.clickToTranslate': 'Cliquez pour traduire',
   'story.stop': 'Arr\u00eater',
   'story.listen': '\u00c9couter',

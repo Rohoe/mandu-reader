@@ -305,6 +305,62 @@ export default {
   'reader.actions.archiveReader': '리더 보관',
   'reader.actions.deleteReader': '리더 삭제',
   'reader.actions.confirmDelete': '이 리더를 영구 삭제하시겠습니까?',
+
+  // ── Difficulty feedback ──────────────────────────────────────
+  'reader.feedback.howWas': '난이도는 어땠나요?',
+  'reader.feedback.tooEasy': '너무 쉬움',
+  'reader.feedback.justRight': '적당함',
+  'reader.feedback.tooDifficult': '너무 어려움',
+  'reader.feedback.thanks': '감사합니다! 향후 리더의 난이도가 조정됩니다.',
+
+  // ── Next actions ─────────────────────────────────────────────
+  'nextAction.title': '다음은 무엇을 할까요?',
+  'nextAction.dueFlashcards': '복습할 플래시카드 {count}장',
+  'nextAction.continueLesson': '계속하기: {topic}',
+  'nextAction.streakProtection': '{count}일 연속 학습 기록을 유지하세요!',
+  'nextAction.practiceStruggling': '어려운 단어 {count}개 연습',
+  'nextAction.createNew': '새 리더 만들기',
+  'nextAction.reviewGrammar': '문법 복습',
+
+  // ── Milestones ───────────────────────────────────────────────
+  'milestone.vocabCount': '단어 {count}개 학습 완료!',
+  'milestone.vocabSub': '어휘력이 성장하고 있어요',
+  'milestone.streak': '{count}일 연속 학습!',
+  'milestone.streakSub': '꾸준함이 핵심입니다',
+  'milestone.firstLesson': '첫 번째 레슨 완료!',
+  'milestone.firstLessonSub': '학습 여정이 시작되었습니다',
+  'milestone.firstQuiz': '첫 번째 퀴즈 완료!',
+  'milestone.firstQuizSub': '테스트는 기억력을 높여줍니다',
+  'milestone.firstSyllabus': '첫 번째 코스 생성!',
+  'milestone.firstSyllabusSub': '체계적 학습이 시작되었습니다',
+
+  // ── Generation progress enhancements ──────────────────────────
+  'progress.timeRemaining': '~{seconds}초',
+  'progress.generatingStory': '약 {count}자 분량의 이야기 생성 중…',
+  'progress.tip1': '팁: 매일 플래시카드를 복습하면 기억력이 향상됩니다',
+  'progress.tip2': '팁: 소리 내어 읽으면 발음 연습에 도움이 됩니다',
+  'progress.tip3': '팁: 어려운 단어를 표시하여 추가 연습하세요',
+  'progress.tip4': '팁: AI 튜터에게 이야기에 대해 질문해 보세요',
+  'progress.tip5': '팁: 어휘를 Anki로 내보내 오프라인 복습하세요',
+
+  // ── Flashcard enhancements ───────────────────────────────────
+  'flashcard.leechBadge': '어려운 단어',
+  'flashcard.leechHint': '이 카드는 여러 번 틀렸습니다',
+
+  // ── Grammar active recall ────────────────────────────────────
+  'grammar.modeClassic': '클래식',
+  'grammar.modeCloze': '빈칸 채우기',
+  'grammar.modeBuild': '문장 만들기',
+  'grammar.modeClassicDesc': '카드를 뒤집어 문법을 복습합니다',
+  'grammar.modeClozeDesc': '빠진 문법을 채워 넣으세요',
+  'grammar.modeBuildDesc': '타일을 배열하여 문장을 만드세요',
+  'grammar.fillPrompt': '빈칸을 채우세요:',
+  'grammar.hintLabel': '문법 힌트:',
+  'grammar.buildPrompt': '단어를 배열하여 올바른 문장을 만드세요:',
+  'grammar.noEligible': '이 모드에 사용할 수 있는 카드가 없습니다',
+  'grammar.tryClassic': '클래식 모드를 사용해 보세요',
+  'grammar.correctAnswer': '정답: {answer}',
+
   'story.clickToTranslate': '클릭하여 번역',
   'story.stop': '정지',
   'story.listen': '듣기',

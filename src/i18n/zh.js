@@ -305,6 +305,62 @@ export default {
   'reader.actions.archiveReader': '归档读物',
   'reader.actions.deleteReader': '删除读物',
   'reader.actions.confirmDelete': '永久删除此读物？',
+
+  // ── Difficulty feedback ──────────────────────────────────────
+  'reader.feedback.howWas': '难度如何？',
+  'reader.feedback.tooEasy': '太简单',
+  'reader.feedback.justRight': '刚刚好',
+  'reader.feedback.tooDifficult': '太难了',
+  'reader.feedback.thanks': '感谢反馈！后续读物将会调整难度。',
+
+  // ── Next actions ─────────────────────────────────────────────
+  'nextAction.title': '接下来做什么？',
+  'nextAction.dueFlashcards': '{count} 张闪卡待复习',
+  'nextAction.continueLesson': '继续：{topic}',
+  'nextAction.streakProtection': '保持你的 {count} 天连续学习记录！',
+  'nextAction.practiceStruggling': '练习 {count} 个困难词汇',
+  'nextAction.createNew': '创建新读物',
+  'nextAction.reviewGrammar': '复习语法',
+
+  // ── Milestones ───────────────────────────────────────────────
+  'milestone.vocabCount': '已学 {count} 个词汇！',
+  'milestone.vocabSub': '你的词汇量在增长',
+  'milestone.streak': '连续 {count} 天！',
+  'milestone.streakSub': '坚持是关键',
+  'milestone.firstLesson': '完成第一课！',
+  'milestone.firstLessonSub': '你的学习之旅已开始',
+  'milestone.firstQuiz': '完成第一次测验！',
+  'milestone.firstQuizSub': '测试有助于记忆',
+  'milestone.firstSyllabus': '创建第一个课程！',
+  'milestone.firstSyllabusSub': '结构化学习已解锁',
+
+  // ── Generation progress enhancements ──────────────────────────
+  'progress.timeRemaining': '~{seconds}秒',
+  'progress.generatingStory': '正在生成约 {count} 字的故事…',
+  'progress.tip1': '提示：每天复习闪卡效果最佳',
+  'progress.tip2': '提示：朗读有助于发音练习',
+  'progress.tip3': '提示：标记困难词汇以加强练习',
+  'progress.tip4': '提示：试试 AI 导师来提问故事相关问题',
+  'progress.tip5': '提示：导出词汇到 Anki 进行离线复习',
+
+  // ── Flashcard enhancements ───────────────────────────────────
+  'flashcard.leechBadge': '困难词',
+  'flashcard.leechHint': '这张卡片已多次答错',
+
+  // ── Grammar active recall ────────────────────────────────────
+  'grammar.modeClassic': '经典',
+  'grammar.modeCloze': '填空',
+  'grammar.modeBuild': '造句',
+  'grammar.modeClassicDesc': '翻转卡片复习语法',
+  'grammar.modeClozeDesc': '填写缺失的语法',
+  'grammar.modeBuildDesc': '排列词块造句',
+  'grammar.fillPrompt': '填写空白处：',
+  'grammar.hintLabel': '语法提示：',
+  'grammar.buildPrompt': '排列词语组成正确的句子：',
+  'grammar.noEligible': '此模式暂无可用卡片',
+  'grammar.tryClassic': '试试经典模式',
+  'grammar.correctAnswer': '正确答案：{answer}',
+
   'story.clickToTranslate': '点击翻译',
   'story.stop': '停止',
   'story.listen': '听',

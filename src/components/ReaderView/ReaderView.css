@@ -735,6 +735,55 @@ rt {
   color: var(--color-text);
 }
 
+/* ── Difficulty feedback pills ──────────────── */
+
+.reader-view__feedback-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+}
+
+.reader-view__feedback-label {
+  font-size: var(--text-sm);
+}
+
+.reader-view__feedback-pills {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.reader-view__feedback-pill {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.reader-view__feedback-pill:hover {
+  background: var(--color-accent-light);
+  border-color: var(--color-accent-dim);
+}
+
+.reader-view__feedback-pill--active {
+  border-color: var(--color-accent);
+}
+
+.reader-view__feedback-thanks {
+  text-align: center;
+  font-size: var(--text-sm);
+  padding: var(--space-2) 0;
+}
+
+[data-theme="dark"] .reader-view__feedback-pill {
+  background: var(--color-surface);
+}
+
 .reader-view__regen-row {
   display: flex;
   justify-content: center;

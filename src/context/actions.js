@@ -103,5 +103,9 @@ export function actions(dispatch) {
     logReadingSession:     (lessonKey, seconds) => dispatch({ type: T.LOG_READING_SESSION, payload: { lessonKey, seconds } }),
     // Weekly goals
     setWeeklyGoals:        goals => dispatch({ type: T.SET_WEEKLY_GOALS, payload: goals }),
+    // Difficulty feedback
+    recordDifficultyFeedback: (langId, rating, level, lessonKey) => dispatch({ type: T.RECORD_DIFFICULTY_FEEDBACK, payload: { langId, rating, level, lessonKey } }),
+    // Milestones
+    markMilestoneShown:    id => dispatch({ type: T.MARK_MILESTONE_SHOWN, payload: id }),
   };
 }

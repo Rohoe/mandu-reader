@@ -1,0 +1,75 @@
+.milestone-celebration {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  z-index: 301;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  animation: celebrateIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-width: 320px;
+}
+
+@keyframes celebrateIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.milestone-celebration__icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.milestone-celebration__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.milestone-celebration__label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-base);
+}
+
+.milestone-celebration__sublabel {
+  font-size: var(--text-sm);
+}
+
+.milestone-celebration__dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  padding: var(--space-1);
+  flex-shrink: 0;
+}
+
+.milestone-celebration__dismiss:hover {
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .milestone-celebration {
+  background: var(--color-surface);
+}
+
+@media (max-width: 768px) {
+  .milestone-celebration {
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+}

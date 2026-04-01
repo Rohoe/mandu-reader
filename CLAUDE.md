@@ -8,7 +8,7 @@ Single-page React + Vite app that generates graded readers in **Mandarin Chinese
 npm install        # first time only
 npm run dev        # http://localhost:5173
 npm run build      # production build
-npm test           # unit tests (Vitest, 738 tests)
+npm test           # unit tests (Vitest, 782 tests)
 npm run test:e2e   # E2E tests (Playwright, 48 tests across 2 projects)
 ```
 
@@ -21,9 +21,9 @@ src/
   App.jsx              Root layout, UI-only state (sidebar, modals, activeSyllabusId, standaloneKey, syllabusView). Default view: 'dashboard' (Home page)
   context/             useReducer global store (AppContext.jsx), useApp hook, actions factory, reducers/ (10 domain slices)
   i18n/                UI string translations: useT() hook, en/zh/yue/ko/fr/es language files
-  lib/                 Core logic: api.js, apiUtils.js, chatApi.js, parser.js, storage.js, readerStorage.js, fileStorage.js, languages.js, nativeLanguages.js, providers.js, llmConfig.js, cloudSync.js, supabase.js, anki.js, ankiApkg.js, stats.js, translate.js, vocabMapper.js, vocabNormalizer.js, grammarMapper.js, sentenceSplitter.js, romanizer.js, demoReader.js, learningPathSchema.js
+  lib/                 Core logic: api.js, apiUtils.js, chatApi.js, parser.js, storage.js, readerStorage.js, fileStorage.js, languages.js, nativeLanguages.js, providers.js, llmConfig.js, cloudSync.js, supabase.js, anki.js, ankiApkg.js, stats.js, translate.js, vocabMapper.js, vocabNormalizer.js, grammarMapper.js, sentenceSplitter.js, romanizer.js, demoReader.js, learningPathSchema.js, nextActions.js, milestones.js
   prompts/             LLM prompt builders (syllabus, reader, grading, extend, tutor, learningPath, narrative, pathUnit, portable)
-  hooks/               useTTS, useRomanization, useVocabPopover, useReaderGeneration, useTutorChat, useFocusTrap, useReadingTimer, usePWA, useBufferedMarkdown, useFlashcardKeyboard, useFlashcardSession, useQuestionTranslation, useSentenceTranslate, useStreamAccumulator, useTextSelection, usePopoverDismissal
+  hooks/               useTTS, useRomanization, useVocabPopover, useReaderGeneration, useTutorChat, useFocusTrap, useReadingTimer, usePWA, useBufferedMarkdown, useFlashcardKeyboard, useFlashcardSession, useQuestionTranslation, useSentenceTranslate, useStreamAccumulator, useTextSelection, usePopoverDismissal, useMilestoneCheck
   components/          UI components (see docs/components.md for details)
 e2e/                   Playwright E2E specs + fixtures
 ```
@@ -41,8 +41,12 @@ e2e/                   Playwright E2E specs + fixtures
 - **Streaming:** Anthropic provider supports streaming responses via `generateReaderStream()` async generator. Text streams progressively to UI with debounced markdown rendering (`useBufferedMarkdown`), then parses on completion.
 - **AI Tutor Chat:** `src/lib/chatApi.js` provides multi-turn `callLLMChat`/`callLLMChatStream` for all providers. `src/prompts/tutorPrompt.js` builds context-rich system prompts. `src/hooks/useTutorChat.js` manages chat state, persists `chatHistory`/`chatSummary` on reader objects via `SET_READER`. "Open in Claude/ChatGPT" always available (copies lesson context to clipboard). UI in `src/components/TutorChat/`.
 - **Grammar SRS:** `grammarReducer.js` + `grammarMapper.js` manage grammar pattern spaced repetition. Grammar cards extracted from reader grammar notes with independent SRS tracking.
-- **Flashcard modes:** `FlashcardReview/` supports multiple modes: SRS Review (vocab + grammar), Quiz Mix, Practice, Sentence Builder, Context Clue, Reverse Listening. Mode picker UI replaced the previous tab-based interface. `useFlashcardSession` manages session state.
-- **Home dashboard:** `HomeView/` component serves as the default landing page (`syllabusView: 'dashboard'`). Shows weekly reading goals, reading session logs, and activity overview. Reading sessions tracked via `useReadingTimer`.
+- **Flashcard modes:** `FlashcardReview/` supports multiple modes: SRS Review (vocab + grammar), Quiz Mix, Practice, Sentence Builder, Context Clue, Reverse Listening. Mode picker UI replaced the previous tab-based interface. `useFlashcardSession` manages session state. Adaptive SRS uses `leechFactor` (0.5–1.0 based on lapses) and differentiated `almost` handling.
+- **Grammar active recall:** `GrammarReviewMode` supports 3 modes: Classic (flip), Cloze (fill blanks via `grammarCloze.js`), Build (arrange tiles). Mode picker UI in grammar review.
+- **Difficulty feedback:** After completing a reader, users rate difficulty (Too Easy / Just Right / Too Difficult). Per-language rolling window of 10 stored in `difficultyFeedback`. `computeDifficultyCalibration()` in `stats.js` produces an exponential-decay-weighted offset injected into reader prompts via `buildLearnerContext`.
+- **Smart next actions:** `src/lib/nextActions.js` returns ranked suggestions (due flashcards, continue lesson, streak protection, struggling vocab, create new). Shown on dashboard (`HomeView`) and post-lesson (`ReaderActions`).
+- **Milestone celebrations:** `src/lib/milestones.js` detects vocab thresholds, streak milestones, and firsts. `useMilestoneCheck` hook manages queue + auto-dismiss. Non-blocking overlay via `MilestoneCelebration` component.
+- **Home dashboard:** `HomeView/` component serves as the default landing page (`syllabusView: 'dashboard'`). Shows weekly reading goals, smart next actions, reading session logs, and activity overview. Reading sessions tracked via `useReadingTimer`.
 - **Inline topic suggestions:** LLM generates topic suggestions during syllabus creation, shown as clickable chips.
 - **Comprehension translation:** `useQuestionTranslation` hook + "Translate All" toggle translates comprehension questions via Google Translate.
 - **Learning Paths:** Multi-unit curricula designed at a high level, then expanded unit-by-unit into syllabi. `learningPathReducer` + `learningPathSchema.js` manage state/validation. `learningPathPrompt.js` generates 6–15 unit blueprints from learner profile. `pathUnitSyllabusPrompt.js` expands units into syllabi with overlap prevention (covered vocab/topics/grammar). `portablePrompt.js` exports LLM-friendly prompts for external AI design.

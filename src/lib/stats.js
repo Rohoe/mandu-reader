@@ -295,10 +295,39 @@ export function getWordsByPeriod(vocab, period = 'week') {
 }
 
 /**
+ * Compute a difficulty calibration offset from recent feedback entries.
+ * Uses exponential decay weighting (0.8 factor) so recent ratings matter more.
+ * Returns a number in roughly [-1, +1]: positive = too easy, negative = too hard.
+ * Returns 0 if no matching entries.
+ */
+export function computeDifficultyCalibration(entries, currentLevel) {
+  if (!entries || entries.length === 0) return 0;
+
+  // Only consider entries matching current level
+  const matching = entries.filter(e => e.level === currentLevel);
+  if (matching.length === 0) return 0;
+
+  const ratingMap = { too_easy: 1, just_right: 0, too_difficult: -1 };
+  let weightedSum = 0;
+  let weightSum = 0;
+  const decay = 0.8;
+
+  // Most recent last — entries are stored chronologically
+  for (let i = 0; i < matching.length; i++) {
+    const weight = Math.pow(decay, matching.length - 1 - i);
+    weightedSum += (ratingMap[matching[i].rating] ?? 0) * weight;
+    weightSum += weight;
+  }
+
+  return weightSum > 0 ? weightedSum / weightSum : 0;
+}
+
+/**
  * Builds a compact learner context string (~100-150 tokens) for adaptive reader generation.
  * Returns null if insufficient data for meaningful adaptation.
+ * @param {object} [options] - Optional: { difficultyFeedback, currentLevel } for calibration
  */
-export function buildLearnerContext(learnedVocabulary, generatedReaders, learningActivity, langId) {
+export function buildLearnerContext(learnedVocabulary, generatedReaders, learningActivity, langId, options) {
   const vocab = learnedVocabulary || {};
   const langWords = Object.entries(vocab).filter(
     ([, info]) => (info.langId || 'zh') === langId && (info.reviewCount ?? 0) > 0
@@ -396,6 +425,24 @@ export function buildLearnerContext(learnedVocabulary, generatedReaders, learnin
         sections.push('Trajectory: accelerating — appropriate to introduce slightly more challenging vocabulary');
       } else if (prior > recent && prior > 0) {
         sections.push('Trajectory: decelerating — prioritize consolidation and familiar contexts');
+      }
+    }
+  }
+
+  // ── Section D: Difficulty Calibration ──────────────────────
+  const { difficultyFeedback, currentLevel } = options || {};
+  if (difficultyFeedback) {
+    const langEntries = difficultyFeedback[langId];
+    if (langEntries?.length > 0) {
+      const offset = computeDifficultyCalibration(langEntries, currentLevel);
+      if (offset > 0.3) {
+        sections.push('Learner finds current level easy — lean toward upper/stretch end, more complex structures, less common vocabulary');
+      } else if (offset > 0.1) {
+        sections.push('Learner is comfortable — slightly favor more challenging vocabulary');
+      } else if (offset < -0.3) {
+        sections.push('Learner finds current level difficult — lean toward lower/review end, shorter sentences, more common vocabulary');
+      } else if (offset < -0.1) {
+        sections.push('Learner finds material slightly challenging — favor simpler patterns, higher-frequency vocabulary');
       }
     }
   }

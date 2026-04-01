@@ -1,4 +1,5 @@
 import { useT } from '../../i18n';
+import { isLeech } from './srs';
 
 /**
  * FlashcardCard — the individual card display with flip and rating buttons.
@@ -20,6 +21,7 @@ export default function FlashcardCard({
   onUndo,
 }) {
   const t = useT();
+  const showLeech = currentCard && isLeech(currentCard, currentDirection);
 
   return (
     <>
@@ -35,6 +37,9 @@ export default function FlashcardCard({
       </div>
 
       <div className="flashcard-card" data-lang={currentCard?.langId}>
+        {showLeech && (
+          <span className="flashcard-leech-badge" title={t('flashcard.leechHint')}>{t('flashcard.leechBadge')}</span>
+        )}
         {currentDirection === 'forward' ? (
           /* Forward card: target on front */
           <>

@@ -25,9 +25,11 @@ import PathHome from './components/PathHome';
 import ImportModal from './components/PathImportExport/ImportModal';
 import ExportModal from './components/PathImportExport/ExportModal';
 import './components/PathImportExport/PathImportExport.css';
+import MilestoneCelebration from './components/MilestoneCelebration';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingIndicator from './components/LoadingIndicator';
 import PWABanner from './components/PWABanner';
+import { useMilestoneCheck } from './hooks/useMilestoneCheck';
 import './App.css';
 
 // ── Notification toast ─────────────────────────────────────────
@@ -85,6 +87,7 @@ function AppShell() {
   const [showPathImport, setShowPathImport] = useState(false);
   const [showPathExport, setShowPathExport] = useState(null); // pathId or null
   const [activePathId,   setActivePathId]   = useState(null);
+  const { activeMilestone, dismiss: dismissMilestone } = useMilestoneCheck();
 
   // Restore last session, falling back to first non-archived syllabus
   const [activeSyllabusId, setActiveSyllabusId] = useState(() => {
@@ -468,6 +471,9 @@ function AppShell() {
                 setStandaloneKey(null);
                 setSyllabusView('dashboard');
               } : undefined}
+              onShowFlashcards={() => setShowFlashcards(true)}
+              onShowNewForm={() => setShowNewForm(true)}
+              onSelectLesson={handleSelectLesson}
             />
           )
         }
@@ -570,6 +576,7 @@ function AppShell() {
 
       {/* ─ Toast notification ────────────────────────────── */}
       <Notification />
+      <MilestoneCelebration milestone={activeMilestone} onDismiss={dismissMilestone} />
       <PWABanner />
     </div>
   );

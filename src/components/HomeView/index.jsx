@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '../../context/useAppSelector';
 import { computeStats } from '../../lib/stats';
+import { getNextActions } from '../../lib/nextActions';
 import { useT } from '../../i18n';
 import WeeklyGoals from './WeeklyGoals';
+import NextActionSuggestion from '../NextActionSuggestion';
 import './HomeView.css';
 
 export default function HomeView({
@@ -25,6 +27,7 @@ export default function HomeView({
   }));
 
   const stats = computeStats(state);
+  const suggestedActions = useMemo(() => getNextActions(state, { context: 'dashboard' }), [state]);
 
   // Build "Continue Learning" list — up to 4 items, exclude completed, prioritize in-progress
   const continueItems = useMemo(() => {
@@ -100,6 +103,16 @@ export default function HomeView({
 
       {/* Weekly Goals */}
       <WeeklyGoals />
+
+      {/* Smart Next Actions */}
+      {suggestedActions.length > 0 && (
+        <NextActionSuggestion
+          actions={suggestedActions}
+          onShowFlashcards={onShowFlashcards}
+          onSelectLesson={onSelectLesson}
+          onShowNewForm={onShowNewForm}
+        />
+      )}
 
       {/* Continue Learning */}
       {continueItems.length > 0 && (
