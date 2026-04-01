@@ -15,6 +15,8 @@ vi.mock('../lib/storage', () => ({
   saveCustomModelName: vi.fn(),
   loadCompatPreset: () => 'deepseek',
   saveCompatPreset: vi.fn(),
+  loadLearningPaths: () => [],
+  saveLearningPaths: vi.fn(),
   loadSyllabi: () => [],
   saveSyllabi: vi.fn(),
   loadSyllabusProgress: () => ({}),

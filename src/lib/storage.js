@@ -75,6 +75,7 @@ const KEYS = {
   READING_TIME_LOG:    'gradedReader_readingTimeLog',
   WEEKLY_GOALS:        'gradedReader_weeklyGoals',
   SHOW_ARCHIVED:       'gradedReader_showArchived',
+  LEARNING_PATHS:      'gradedReader_learningPaths',
 };
 
 const READER_KEY_PREFIX = 'gradedReader_reader_';
@@ -268,6 +269,16 @@ export function loadSyllabi() {
 export function saveSyllabi(arr) {
   save(KEYS.SYLLABI, arr);
   saveSyllabiFile();
+}
+
+// ── Learning Paths ────────────────────────────────────────────
+
+export function loadLearningPaths() {
+  return load(KEYS.LEARNING_PATHS, []);
+}
+
+export function saveLearningPaths(arr) {
+  save(KEYS.LEARNING_PATHS, arr);
 }
 
 // ── Syllabus Progress ─────────────────────────────────────────
@@ -885,6 +896,7 @@ export function exportAllData() {
     syllabi:          load(KEYS.SYLLABI, []),
     syllabusProgress: load(KEYS.SYLLABUS_PROGRESS, {}),
     standaloneReaders:load(KEYS.STANDALONE_READERS, []),
+    learningPaths:    load(KEYS.LEARNING_PATHS, []),
     generatedReaders: loadAllReaders(),
     learnedVocabulary:load(KEYS.VOCABULARY, {}),
     exportedWords:    load(KEYS.EXPORTED, []),

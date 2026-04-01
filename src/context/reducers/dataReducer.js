@@ -16,11 +16,13 @@ export function dataReducer(state, action, buildInitialState) {
       const restoredVocab = d.learnedVocabulary || d.learned_vocabulary || {};
       const restoredGrammar = d.learnedGrammar || d.learned_grammar || {};
       const restoredExported = d.exportedWords || d.exported_words || [];
+      const restoredPaths = d.learningPaths || d.learning_paths || [];
       return {
         ...state,
         syllabi:           restoredSyllabi,
         syllabusProgress:  restoredProgress,
         standaloneReaders: restoredStandalone,
+        learningPaths:     restoredPaths,
         generatedReaders:  {},
         learnedVocabulary: restoredVocab,
         learnedGrammar:    restoredGrammar,

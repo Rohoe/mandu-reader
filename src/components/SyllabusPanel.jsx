@@ -10,6 +10,7 @@ import StandaloneReaderItem from './SyllabusPanel/StandaloneReaderItem';
 import SeriesGroup from './SyllabusPanel/SeriesGroup';
 import ArchivedSection from './SyllabusPanel/ArchivedSection';
 import CompletedSection from './SyllabusPanel/CompletedSection';
+import PathGroup from './SyllabusPanel/PathGroup';
 import SyncFooter from './SyllabusPanel/SyncFooter';
 import ConfirmDialog from './SyllabusPanel/ConfirmDialog';
 import './SyllabusPanel.css';
@@ -28,10 +29,14 @@ export default function SyllabusPanel({
   onGoHome,
   onShowNewForm,
   onShowSignIn,
+  onShowPathWizard,
+  onSelectPath,
+  activePathId,
 }) {
-  const { syllabi, syllabusProgress, standaloneReaders, generatedReaders, loading, pendingReaders, cloudUser, cloudSyncing, cloudLastSynced, lastModified, showArchived } = useAppSelector(s => ({
+  const { syllabi, syllabusProgress, standaloneReaders, generatedReaders, learningPaths, loading, pendingReaders, cloudUser, cloudSyncing, cloudLastSynced, lastModified, showArchived } = useAppSelector(s => ({
     syllabi: s.syllabi, syllabusProgress: s.syllabusProgress, standaloneReaders: s.standaloneReaders,
-    generatedReaders: s.generatedReaders, loading: s.loading, pendingReaders: s.pendingReaders,
+    generatedReaders: s.generatedReaders, learningPaths: s.learningPaths || [],
+    loading: s.loading, pendingReaders: s.pendingReaders,
     cloudUser: s.cloudUser, cloudSyncing: s.cloudSyncing, cloudLastSynced: s.cloudLastSynced, lastModified: s.lastModified,
     showArchived: s.showArchived,
   }));
@@ -148,6 +153,7 @@ export default function SyllabusPanel({
     return { inProgressSeriesGroups: inProg, completedSeriesGroups: done };
   }, [seriesGroups]);
 
+  const [expandedPaths, setExpandedPaths] = useState(new Set());
   const [expandedSeries, setExpandedSeries] = useState({});
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -218,13 +224,22 @@ export default function SyllabusPanel({
             </span>
           )}
         </h1>
-        <button
-          className="btn btn-ghost btn-sm syllabus-panel__new-btn"
-          onClick={() => onShowNewForm?.()}
-          title={t('sidebar.newTooltip')}
-        >
-          {t('sidebar.new')}
-        </button>
+        <div className="syllabus-panel__new-group">
+          <button
+            className="btn btn-ghost btn-sm syllabus-panel__new-btn"
+            onClick={() => onShowNewForm?.()}
+            title={t('sidebar.newTooltip')}
+          >
+            {t('sidebar.new')}
+          </button>
+          <button
+            className="btn btn-ghost btn-sm syllabus-panel__new-btn"
+            onClick={() => onShowPathWizard?.()}
+            title="Create a guided learning path"
+          >
+            + Path
+          </button>
+        </div>
       </div>
 
       {/* Home button */}
@@ -258,6 +273,28 @@ export default function SyllabusPanel({
       {hasContent && !hasFilteredContent && isFiltering && (
         <div className="syllabus-panel__no-results">
           <p className="text-muted">{t('sidebar.noMatching')}</p>
+        </div>
+      )}
+
+      {/* Learning Paths */}
+      {learningPaths.filter(p => !p.archived).length > 0 && (
+        <div className="syllabus-panel__content-list">
+          <div className="syllabus-panel__section-label">Learning Paths</div>
+          {learningPaths.filter(p => !p.archived).map(path => (
+            <PathGroup
+              key={path.id}
+              path={path}
+              isActive={activePathId === path.id}
+              isExpanded={expandedPaths.has(path.id)}
+              onPathClick={() => onSelectPath?.(path.id)}
+              onToggleExpand={(id) => setExpandedPaths(prev => {
+                const next = new Set(prev);
+                if (next.has(id)) next.delete(id); else next.add(id);
+                return next;
+              })}
+              onUnitClick={(syllabusId) => onSwitchSyllabus?.(syllabusId)}
+            />
+          ))}
         </div>
       )}
 
