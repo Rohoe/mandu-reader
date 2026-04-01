@@ -40,6 +40,7 @@ export async function pushToCloud(state) {
     learned_vocabulary: state.learnedVocabulary,
     learned_grammar:    state.learnedGrammar,
     exported_words:     [...state.exportedWords],
+    learning_paths:     state.learningPaths || [],
     updated_at:         new Date().toISOString(),
   });
   if (error) throw error;
@@ -122,6 +123,7 @@ function hashData(data) {
     learnedVocabulary: data.learnedVocabulary,
     learnedGrammar: data.learnedGrammar,
     exportedWords: data.exportedWords,
+    learningPaths: data.learningPaths,
   });
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -300,6 +302,22 @@ export function mergeData(localState, cloudData, { prefer = 'local' } = {}) {
     : Array.isArray(localState.exportedWords) ? localState.exportedWords : [];
   const exported_words = [...new Set([...cloudExported, ...localExported])];
 
+  // Learning paths: union by id; preferred side wins on conflict,
+  // keep version with more units (extensions append)
+  const pathMap = new Map();
+  const [pathFirst, pathSecond] = cloudWins
+    ? [localState.learningPaths || [], cloudData.learning_paths || []]
+    : [cloudData.learning_paths || [], localState.learningPaths || []];
+  for (const p of pathFirst) pathMap.set(p.id, p);
+  for (const p of pathSecond) {
+    const existing = pathMap.get(p.id);
+    if (existing && (existing.units?.length || 0) > (p.units?.length || 0)) {
+      continue; // Keep the version with more units
+    }
+    pathMap.set(p.id, p);
+  }
+  const learning_paths = [...pathMap.values()];
+
   return {
     syllabi,
     syllabus_progress,
@@ -308,6 +326,7 @@ export function mergeData(localState, cloudData, { prefer = 'local' } = {}) {
     learned_vocabulary,
     learned_grammar,
     exported_words,
+    learning_paths,
     updated_at: new Date().toISOString(),
   };
 }
@@ -346,6 +365,7 @@ export async function pushMergedToCloud(mergedData) {
     learned_vocabulary: mergedData.learned_vocabulary,
     learned_grammar:    mergedData.learned_grammar,
     exported_words:     mergedData.exported_words,
+    learning_paths:     mergedData.learning_paths || [],
     updated_at:         mergedData.updated_at || new Date().toISOString(),
   });
   if (error) throw error;

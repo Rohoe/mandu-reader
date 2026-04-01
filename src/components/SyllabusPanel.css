@@ -51,6 +51,12 @@
   to   { opacity: 1; }
 }
 
+.syllabus-panel__new-group {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
 .syllabus-panel__new-btn {
   flex-shrink: 0;
   font-weight: 600;
@@ -766,6 +772,115 @@
 
 [data-theme="dark"] .syllabus-panel__confirm-overlay {
   background: rgba(20, 20, 18, 0.85);
+}
+
+/* ── Path groups ────────────────────────── */
+
+.path-group {
+  margin-bottom: var(--space-1);
+}
+
+.path-group--active > .path-group__header {
+  background: var(--color-accent-light, #e8f0f0);
+  color: var(--color-accent);
+}
+
+.path-group__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+  background: none;
+  border: none;
+  color: inherit;
+  text-align: left;
+}
+
+.path-group__header:hover {
+  background: var(--color-accent-light, #e8f0f0);
+}
+
+.path-group__icon {
+  font-size: var(--text-base);
+}
+
+.path-group__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.path-group__badge {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.path-group__expand {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  padding: 2px;
+}
+
+.path-group__units {
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.path-group__unit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-radius: var(--radius-sm, 4px);
+  transition: background var(--transition);
+}
+
+.path-group__unit:hover:not(:disabled) {
+  background: var(--color-accent-light, #e8f0f0);
+}
+
+.path-group__unit:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.path-group__unit--generated {
+  color: var(--color-text);
+}
+
+.path-group__unit-status {
+  font-size: 10px;
+}
+
+.path-group__unit-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.syllabus-panel__section-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  padding: var(--space-2) var(--space-2) var(--space-1);
 }
 
 /* ── Mobile ─────────────────────────────── */

@@ -15,6 +15,8 @@ import { buildExtendSyllabusPrompt } from '../prompts/extendSyllabusPrompt';
 import { buildNarrativeSyllabusPrompt } from '../prompts/narrativeSyllabusPrompt';
 import { buildExtendNarrativeSyllabusPrompt } from '../prompts/extendNarrativeSyllabusPrompt';
 import { buildNarrativeReaderSystem } from '../prompts/narrativeReaderPrompt';
+import { buildLearningPathPrompt, buildExtendPathPrompt } from '../prompts/learningPathPrompt';
+import { buildPathUnitSyllabusPrompt } from '../prompts/pathUnitSyllabusPrompt';
 import { createTimeoutController, parseJSONWithFallback, fetchWithRetry, isRetryable, classifyApiError, buildAnthropicHeaders, parseSSEStream } from './apiUtils';
 
 export { isRetryable, classifyApiError };
@@ -376,6 +378,86 @@ export async function generateNarrativeSyllabus(llmConfig, sourceMaterial, narra
     narrativeArc: result.narrative_arc || {},
     lessons: result.lessons || [],
     futureArc: result.future_arc || null,
+    suggestedTopics: result.suggested_topics || result.suggestedTopics || [],
+  };
+}
+
+// ── Learning Path blueprint generation ────────────────────────
+
+export async function generateLearningPath(llmConfig, profile, langId = DEFAULT_LANG_ID, nativeLang = 'en') {
+  const langConfig = getLang(langId);
+  const nativeLangName = getNativeLang(nativeLang).name;
+  const prompt = buildLearningPathPrompt(langConfig, profile, nativeLangName);
+
+  const raw = await callLLM(llmConfig, '', prompt, 4096);
+  const result = parseJSONWithFallback(raw, 'LLM returned an invalid learning path format. Please try again.');
+
+  return {
+    title: result.title || '',
+    description: result.description || '',
+    units: (result.units || []).map((u, i) => ({
+      unitIndex: i,
+      title: u.title,
+      description: u.description,
+      estimatedLessons: u.estimated_lessons || u.estimatedLessons || 8,
+      style: u.style || 'thematic',
+      vocabThemes: u.vocab_themes || u.vocabThemes || [],
+      sourceMaterial: u.source_material || u.sourceMaterial || null,
+      syllabusId: null,
+      status: 'pending',
+    })),
+    continuationContext: result.continuation_context || result.continuationContext || null,
+  };
+}
+
+export async function extendLearningPathAPI(llmConfig, path, additionalCount = 5, nativeLang = 'en') {
+  const langConfig = getLang(path.langId);
+  const nativeLangName = getNativeLang(nativeLang).name;
+  const prompt = buildExtendPathPrompt(langConfig, path, additionalCount, nativeLangName);
+
+  const raw = await callLLM(llmConfig, '', prompt, 4096);
+  const result = parseJSONWithFallback(raw, 'LLM returned an invalid extension format. Please try again.');
+
+  return {
+    units: (result.units || []).map(u => ({
+      title: u.title,
+      description: u.description,
+      estimatedLessons: u.estimated_lessons || u.estimatedLessons || 8,
+      style: u.style || 'thematic',
+      vocabThemes: u.vocab_themes || u.vocabThemes || [],
+      sourceMaterial: u.source_material || u.sourceMaterial || null,
+    })),
+    continuationContext: result.continuation_context || result.continuationContext || null,
+  };
+}
+
+export async function generatePathUnitSyllabus(llmConfig, unit, pathContext, level, lessonCount = 8, langId = DEFAULT_LANG_ID, nativeLang = 'en', { learnerProfile } = {}) {
+  const langConfig = getLang(langId);
+  const nativeLangName = getNativeLang(nativeLang).name;
+  const prompt = buildPathUnitSyllabusPrompt(langConfig, unit, pathContext, level, lessonCount, nativeLangName, { learnerProfile });
+
+  const maxTokens = unit.style === 'narrative' ? 8192 : 2048;
+  const raw = await callLLM(llmConfig, '', prompt, maxTokens);
+  const result = parseJSONWithFallback(raw, 'LLM returned an invalid syllabus format. Please try again.');
+
+  // Narrative units return narrative_arc structure
+  if (unit.style === 'narrative' && result.narrative_arc) {
+    return {
+      type: 'narrative',
+      narrativeArc: result.narrative_arc,
+      lessons: result.lessons || [],
+      futureArc: result.future_arc || null,
+      suggestedTopics: result.suggested_topics || [],
+    };
+  }
+
+  // Standard/exploratory units
+  if (Array.isArray(result)) {
+    return { summary: '', lessons: result, suggestedTopics: [] };
+  }
+  return {
+    summary: result.summary || '',
+    lessons: result.lessons || [],
     suggestedTopics: result.suggested_topics || result.suggestedTopics || [],
   };
 }

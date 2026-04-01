@@ -4,6 +4,7 @@ import { usePersistence } from './usePersistence';
 import { useFileStorageInit } from './hooks/useFileStorageInit';
 import { useCloudStartup } from './hooks/useCloudStartup';
 import { useStartupEviction } from './hooks/useStartupEviction';
+import { usePathCoverage } from './hooks/usePathCoverage';
 import { normalizeSyllabi, normalizeStandaloneReaders } from '../lib/vocabNormalizer';
 import { providerReducer } from './reducers/providerReducer';
 import { syllabusReducer } from './reducers/syllabusReducer';
@@ -13,6 +14,7 @@ import { grammarReducer } from './reducers/grammarReducer';
 import { uiReducer } from './reducers/uiReducer';
 import { preferencesReducer } from './reducers/preferencesReducer';
 import { cloudReducer } from './reducers/cloudReducer';
+import { learningPathReducer } from './reducers/learningPathReducer';
 import { dataReducer } from './reducers/dataReducer';
 import {
   DATA_ACTIONS, SET_SAVE_FOLDER, SET_NOTIFICATION, SET_READER,
@@ -65,6 +67,7 @@ import {
   loadDefaultLevels,
   loadNativeLang,
   loadShowArchived,
+  loadLearningPaths,
   setDirectoryHandle,
 } from '../lib/storage';
 import {
@@ -106,6 +109,7 @@ function buildInitialState() {
     customModelName:   loadCustomModelName(),
     compatPreset:      loadCompatPreset(),
     syllabi:           demoSyllabi,
+    learningPaths:     loadLearningPaths(),
     syllabusProgress:  isEmpty
       ? { ...loadSyllabusProgress(), [DEMO_NARRATIVE.syllabus.id]: { lessonIndex: 0, completedLessons: [] } }
       : loadSyllabusProgress(),
@@ -175,6 +179,7 @@ function buildInitialState() {
 const sliceReducers = [
   providerReducer,
   syllabusReducer,
+  learningPathReducer,
   readerReducer,
   vocabularyReducer,
   grammarReducer,
@@ -234,6 +239,7 @@ export function AppProvider({ children }) {
   useFileStorageInit(dispatch);
   useCloudStartup(state, dispatch, stateRef, startupSyncDoneRef, syncPausedRef);
   useStartupEviction(state, dispatch, stateRef);
+  usePathCoverage(state, dispatch);
 
   // ── Persistence effects (extracted to custom hook) ──
   usePersistence(state, dispatch, stateRef);

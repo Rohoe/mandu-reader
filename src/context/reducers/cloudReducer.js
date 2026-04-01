@@ -30,6 +30,7 @@ export function cloudReducer(state, action) {
         learnedVocabulary: d.learned_vocabulary,
         learnedGrammar:    d.learned_grammar || {},
         exportedWords:     new Set(d.exported_words),
+        learningPaths:     d.learning_paths || state.learningPaths,
         lastModified:      cloudTs,
       };
     }
@@ -47,6 +48,7 @@ export function cloudReducer(state, action) {
         learnedVocabulary: d.learned_vocabulary,
         learnedGrammar:    d.learned_grammar || {},
         exportedWords:     new Set(d.exported_words),
+        learningPaths:     d.learning_paths || state.learningPaths,
         lastModified:      Date.now(),
       };
     }

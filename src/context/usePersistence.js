@@ -4,6 +4,7 @@
  */
 import { useEffect, useRef } from 'react';
 import {
+  saveLearningPaths,
   saveSyllabi,
   saveSyllabusProgress,
   saveStandaloneReaders,
@@ -57,6 +58,7 @@ import { SET_QUOTA_WARNING, SET_NOTIFICATION } from './actionTypes';
 
 const PERSISTENCE_MAP = [
   // Data slices
+  { key: 'learningPaths', save: saveLearningPaths },
   { key: 'syllabi', save: saveSyllabi },
   { key: 'syllabusProgress', save: saveSyllabusProgress },
   { key: 'standaloneReaders', save: saveStandaloneReaders },

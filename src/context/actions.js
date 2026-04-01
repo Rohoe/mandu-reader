@@ -14,6 +14,18 @@ export function actions(dispatch) {
     setCustomBaseUrl:      url    => dispatch({ type: T.SET_CUSTOM_BASE_URL, payload: url }),
     setCustomModelName:    name   => dispatch({ type: T.SET_CUSTOM_MODEL_NAME, payload: name }),
     setCompatPreset:       preset => dispatch({ type: T.SET_COMPAT_PRESET, payload: preset }),
+    // Learning Paths
+    addLearningPath:        path   => dispatch({ type: T.ADD_LEARNING_PATH, payload: path }),
+    updateLearningPath:     (id, updates) => dispatch({ type: T.UPDATE_LEARNING_PATH, payload: { id, ...updates } }),
+    removeLearningPath:     id     => dispatch({ type: T.REMOVE_LEARNING_PATH, payload: id }),
+    undoRemoveLearningPath: ()     => dispatch({ type: T.UNDO_REMOVE_LEARNING_PATH }),
+    setPathUnitSyllabus:    (pathId, unitIndex, syllabusId) => dispatch({ type: T.SET_PATH_UNIT_SYLLABUS, payload: { pathId, unitIndex, syllabusId } }),
+    updatePathCoverage:     (pathId, vocab, topics, grammar) => dispatch({ type: T.UPDATE_PATH_COVERAGE, payload: { pathId, vocab, topics, grammar } }),
+    extendLearningPath:     (pathId, newUnits, continuationContext) => dispatch({ type: T.EXTEND_LEARNING_PATH, payload: { pathId, newUnits, continuationContext } }),
+    reorderPathUnits:       (pathId, unitOrder) => dispatch({ type: T.REORDER_PATH_UNITS, payload: { pathId, unitOrder } }),
+    updatePathUnit:         (pathId, unitIndex, updates) => dispatch({ type: T.UPDATE_PATH_UNIT, payload: { pathId, unitIndex, ...updates } }),
+    archiveLearningPath:    id     => dispatch({ type: T.ARCHIVE_LEARNING_PATH, payload: id }),
+    unarchiveLearningPath:  id     => dispatch({ type: T.UNARCHIVE_LEARNING_PATH, payload: id }),
     // Syllabi
     addSyllabus:           s      => dispatch({ type: T.ADD_SYLLABUS, payload: s }),
     removeSyllabus:        id     => dispatch({ type: T.REMOVE_SYLLABUS, payload: id }),

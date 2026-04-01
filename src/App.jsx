@@ -21,6 +21,11 @@ import FlashcardReview from './components/FlashcardReview';
 import SignInModal from './components/SignInModal';
 import TutorChat from './components/TutorChat';
 import HomeView from './components/HomeView';
+import PathWizard from './components/PathWizard';
+import PathHome from './components/PathHome';
+import ImportModal from './components/PathImportExport/ImportModal';
+import ExportModal from './components/PathImportExport/ExportModal';
+import './components/PathImportExport/PathImportExport.css';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingIndicator from './components/LoadingIndicator';
 import PWABanner from './components/PWABanner';
@@ -78,6 +83,10 @@ function AppShell() {
   const [sidebarOpen,    setSidebarOpen]     = useState(false);
   const [chatOpen,       setChatOpen]       = useState(false);
   const [flashcardConfig, setFlashcardConfig] = useState(null);
+  const [showPathWizard, setShowPathWizard] = useState(false);
+  const [showPathImport, setShowPathImport] = useState(false);
+  const [showPathExport, setShowPathExport] = useState(null); // pathId or null
+  const [activePathId,   setActivePathId]   = useState(null);
 
   // Restore last session, falling back to first non-archived syllabus
   const [activeSyllabusId, setActiveSyllabusId] = useState(() => {
@@ -156,6 +165,28 @@ function AppShell() {
   function handleGoSyllabusHome() {
     setSyllabusView('home');
     setStandaloneKey(null);
+  }
+
+  function handleSelectPath(pathId) {
+    setActivePathId(pathId);
+    setSyllabusView('pathHome');
+    setStandaloneKey(null);
+    setSidebarOpen(false);
+  }
+
+  function handlePathCreated(pathId) {
+    setShowPathWizard(false);
+    handleSelectPath(pathId);
+  }
+
+  function handlePathSelectUnit(syllabusId) {
+    const syl = syllabi.find(s => s.id === syllabusId);
+    if (syl) {
+      setActiveSyllabusId(syllabusId);
+      setSyllabusView('home');
+      setStandaloneKey(null);
+      setSidebarOpen(false);
+    }
   }
 
   function handleDeleteSyllabus(id) {
@@ -373,6 +404,9 @@ function AppShell() {
             onGoHome={() => { setSyllabusView('dashboard'); setStandaloneKey(null); setSidebarOpen(false); }}
             onShowNewForm={() => setShowNewForm(true)}
             onShowSignIn={() => setShowSignIn(true)}
+            onShowPathWizard={() => setShowPathWizard(true)}
+            onSelectPath={handleSelectPath}
+            activePathId={activePathId}
           />
         </ErrorBoundary>
       </div>
@@ -388,6 +422,15 @@ function AppShell() {
               onShowNewForm={() => setShowNewForm(true)}
               onSelectLesson={handleSelectLesson}
               onSelectStandalone={handleSelectStandalone}
+            />
+          )
+          : syllabusView === 'pathHome' && activePathId && !standaloneKey
+          ? (
+            <PathHome
+              pathId={activePathId}
+              onSelectUnit={handlePathSelectUnit}
+              onOpenSettings={() => setShowSettings(true)}
+              onShowImportExport={(id) => setShowPathExport(id)}
             />
           )
           : activeSyllabusId && syllabusView === 'home' && !standaloneKey
@@ -485,6 +528,53 @@ function AppShell() {
               onCancel={() => setShowNewForm(false)}
               onOpenSettings={() => { setShowNewForm(false); setShowSettings(true); }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ─ Path wizard modal ────────────────────────────── */}
+      {showPathWizard && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="path-wizard-title" onClick={e => e.target === e.currentTarget && setShowPathWizard(false)}>
+          <div className="settings-panel card card-padded fade-in" style={{ maxWidth: '600px' }}>
+            <div className="settings-panel__header">
+              <h2 id="path-wizard-title" className="font-display" style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>{t('path.createTitle')}</h2>
+              <button className="btn btn-ghost settings-panel__close" onClick={() => setShowPathWizard(false)} aria-label={t('common.close')}>✕</button>
+            </div>
+            <PathWizard
+              onCreated={handlePathCreated}
+              onCancel={() => setShowPathWizard(false)}
+              onOpenSettings={() => { setShowPathWizard(false); setShowSettings(true); }}
+              onShowImport={() => { setShowPathWizard(false); setShowPathImport(true); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ─ Path import modal ──────────────────────────────── */}
+      {showPathImport && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={e => e.target === e.currentTarget && setShowPathImport(false)}>
+          <div className="settings-panel card card-padded fade-in" style={{ maxWidth: '600px' }}>
+            <div className="settings-panel__header">
+              <h2 className="font-display" style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>{t('path.importTitle')}</h2>
+              <button className="btn btn-ghost settings-panel__close" onClick={() => setShowPathImport(false)} aria-label={t('common.close')}>✕</button>
+            </div>
+            <ImportModal
+              onClose={() => setShowPathImport(false)}
+              onImported={(id) => { setShowPathImport(false); handleSelectPath(id); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ─ Path export modal ──────────────────────────────── */}
+      {showPathExport && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={e => e.target === e.currentTarget && setShowPathExport(null)}>
+          <div className="settings-panel card card-padded fade-in" style={{ maxWidth: '600px' }}>
+            <div className="settings-panel__header">
+              <h2 className="font-display" style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Export</h2>
+              <button className="btn btn-ghost settings-panel__close" onClick={() => setShowPathExport(null)} aria-label={t('common.close')}>✕</button>
+            </div>
+            <ExportModal pathId={showPathExport} onClose={() => setShowPathExport(null)} />
           </div>
         </div>
       )}
