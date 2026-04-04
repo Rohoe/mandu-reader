@@ -2,21 +2,53 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getLang } from '../lib/languages';
 import { useT } from '../i18n';
-import { Check, Copy, Square } from 'lucide-react';
+import { Check, Copy, Square, ChevronDown, ChevronUp } from 'lucide-react';
 
-const LANG_LOCALE = { zh: 'zh', yue: 'zh', ko: 'ko', fr: 'fr', es: 'es', en: 'en' };
+/**
+ * Popover shown when a word in the story is clicked.
+ * Shows the word translation, with an expandable sentence translation section.
+ */
+export default function SentencePopover({
+  sentencePopover,
+  popoverRef,
+  getPopoverPosition,
+  romanizer,
+  pinyinOn,
+  onTranslateSentence,
+  langId,
+  ttsSupported,
+  speakText,
+  speakingKey,
+}) {
+  if (!sentencePopover) return null;
 
-function segmentWords(text, langId) {
-  if (typeof Intl.Segmenter !== 'function') return null;
-  const locale = LANG_LOCALE[langId];
-  if (!locale) return null;
-  try {
-    const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
-    return [...segmenter.segment(text)];
-  } catch { return null; }
+  const { wordText, sentenceText, rect, wordTranslation, sentenceTranslation, showSentence } = sentencePopover;
+  const style = getPopoverPosition(rect, 280);
+
+  return createPortal(
+    <SentencePopoverInner
+      ref={popoverRef}
+      wordText={wordText}
+      sentenceText={sentenceText}
+      wordTranslation={wordTranslation}
+      sentenceTranslation={sentenceTranslation}
+      showSentence={showSentence}
+      style={style}
+      onTranslateSentence={onTranslateSentence}
+      langId={langId}
+      romanizer={romanizer}
+      pinyinOn={pinyinOn}
+      ttsSupported={ttsSupported}
+      speakText={speakText}
+      speakingKey={speakingKey}
+    />,
+    document.body
+  );
 }
 
-/** Render a text string with ruby annotations for each target-script character. */
+import { forwardRef } from 'react';
+
+/** Render text with ruby annotations for each target-script character. */
 function rubyAnnotate(text, romanizer, scriptRegex, keyPrefix) {
   const chars = [...text];
   let romArr;
@@ -40,60 +72,16 @@ function rubyAnnotate(text, romanizer, scriptRegex, keyPrefix) {
   return nodes;
 }
 
-/**
- * Popover shown when a sentence is clicked.
- * Displays the original sentence with inline ruby romanization, and translation.
- */
-export default function SentencePopover({
-  sentencePopover,
-  popoverRef,
-  getPopoverPosition,
-  romanizer,
-  pinyinOn,
-  onSubSelection,
-  langId,
-  ttsSupported,
-  speakText,
-  speakingKey,
-}) {
-  if (!sentencePopover) return null;
-
-  const { sentenceText, rect, translation, subText, subTranslation } = sentencePopover;
-  const style = getPopoverPosition(rect, 320);
-
-  return createPortal(
-    <SentencePopoverInner
-      ref={popoverRef}
-      sentenceText={sentenceText}
-      translation={translation}
-      subText={subText}
-      subTranslation={subTranslation}
-      style={style}
-      onSubSelection={onSubSelection}
-      langId={langId}
-      romanizer={romanizer}
-      pinyinOn={pinyinOn}
-      ttsSupported={ttsSupported}
-      speakText={speakText}
-      speakingKey={speakingKey}
-    />,
-    document.body
-  );
-}
-
-import { forwardRef } from 'react';
-
 const SentencePopoverInner = forwardRef(function SentencePopoverInner(
-  { sentenceText, translation, subText, subTranslation, style, onSubSelection, langId, romanizer, pinyinOn, ttsSupported, speakText, speakingKey },
+  { wordText, sentenceText, wordTranslation, sentenceTranslation, showSentence, style, onTranslateSentence, langId, romanizer, pinyinOn, ttsSupported, speakText, speakingKey },
   ref
 ) {
   const t = useT();
-  const [hoveredIdx, setHoveredIdx] = useState(null);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef(null);
 
   const handleCopy = useCallback(() => {
-    const text = translation ? `${sentenceText}\n${translation}` : sentenceText;
+    const text = wordTranslation ? `${wordText}\n${wordTranslation}` : wordText;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       clearTimeout(copiedTimer.current);
@@ -103,98 +91,54 @@ const SentencePopoverInner = forwardRef(function SentencePopoverInner(
       clearTimeout(copiedTimer.current);
       copiedTimer.current = setTimeout(() => setCopied(false), 1500);
     });
-  }, [sentenceText, translation]);
+  }, [wordText, wordTranslation]);
 
   const scriptRegex = useMemo(() => {
     const cfg = getLang(langId);
     return cfg?.scriptRegex || null;
   }, [langId]);
 
-  const segments = useMemo(
-    () => segmentWords(sentenceText, langId),
-    [sentenceText, langId]
-  );
+  /** Get plain romanization string for the word. */
+  const getRomanization = (text) => {
+    if (!romanizer || !scriptRegex) return null;
+    try { return romanizer.romanize(text).join(''); } catch { return null; }
+  };
 
-  const handleMouseUp = useCallback(() => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    const text = sel.toString().trim();
-    if (!text || text === sentenceText) return;
-    // Skip sub-selection if text contains no target-script characters
-    if (scriptRegex && !scriptRegex.test(text)) return;
-    onSubSelection(text);
-  }, [sentenceText, onSubSelection, scriptRegex]);
-
-  // Listen for mouseup within the popover for sub-selection drill-down
-  useEffect(() => {
-    const el = ref?.current;
-    if (!el) return;
-    el.addEventListener('mouseup', handleMouseUp);
-    return () => el.removeEventListener('mouseup', handleMouseUp);
-  }, [ref, handleMouseUp]);
-
-  const handleWordClick = useCallback((word) => {
-    // Clear any text selection so it doesn't interfere
-    window.getSelection()?.removeAllRanges();
-    // Skip if word contains no target-script characters
-    if (scriptRegex && !scriptRegex.test(word)) return;
-    onSubSelection(word);
-  }, [onSubSelection, scriptRegex]);
-
-  /** Render text for a single segment, with optional ruby annotations. */
-  const renderSegText = (text, keyPrefix) => {
+  /** Render text with optional ruby annotations. */
+  const renderText = (text, keyPrefix) => {
     if (pinyinOn && romanizer && scriptRegex) {
       return rubyAnnotate(text, romanizer, scriptRegex, keyPrefix);
     }
     return text;
   };
 
-  /** Get plain romanization string for a text (used in sub-selection). */
-  const getRomanization = (text) => {
-    if (!romanizer || !scriptRegex) return null;
-    try { return romanizer.romanize(text).join(''); } catch (e) { console.warn('[SentencePopover] romanization failed:', e); return null; }
-  };
-
-  const renderSentenceText = () => {
-    if (!segments) {
-      return renderSegText(sentenceText, 'sp');
-    }
-    return segments.map((seg, i) => {
-      if (!seg.isWordLike) return <span key={`p${i}`}>{renderSegText(seg.segment, `p${i}`)}</span>;
-      return (
-        <span
-          key={i}
-          className={`sentence-popover__word${hoveredIdx === i ? ' sentence-popover__word--hover' : ''}`}
-          onMouseEnter={() => setHoveredIdx(i)}
-          onMouseLeave={() => setHoveredIdx(null)}
-          onClick={(e) => { e.stopPropagation(); handleWordClick(seg.segment); }}
-        >
-          {renderSegText(seg.segment, `w${i}`)}
-        </span>
-      );
-    });
-  };
+  const wordRomanization = getRomanization(wordText);
+  const isSpeakingWord = speakingKey === `word-${wordText}`;
 
   return (
-    <div ref={ref} className="reader-view__popover sentence-popover" role="dialog" aria-label="Sentence translation" style={style}>
+    <div ref={ref} className="reader-view__popover sentence-popover" role="dialog" aria-label="Word translation" style={style}>
+      {/* Word section */}
       <div className="popover-tts-row">
         <span className={`sentence-popover__original text-target${pinyinOn && romanizer ? ' sentence-popover__original--ruby' : ''}`}>
-          {renderSentenceText()}
+          {renderText(wordText, 'wt')}
         </span>
         {ttsSupported && speakText && (
           <button
-            className={`popover-tts-btn${speakingKey === `sent-${sentenceText}` ? ' popover-tts-btn--active' : ''}`}
-            onClick={(e) => { e.stopPropagation(); speakText(sentenceText, `sent-${sentenceText}`); }}
-            title={speakingKey === `sent-${sentenceText}` ? t('story.stop') : t('story.listen')}
-            aria-label={speakingKey === `sent-${sentenceText}` ? t('story.stopSpeaking') : t('story.listenToSentence')}
+            className={`popover-tts-btn${isSpeakingWord ? ' popover-tts-btn--active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); speakText(wordText, `word-${wordText}`); }}
+            title={isSpeakingWord ? t('story.stop') : t('story.listen')}
+            aria-label={isSpeakingWord ? t('story.stopSpeaking') : t('story.listenToWord')}
           >
-            {speakingKey === `sent-${sentenceText}` ? <Square size={12} /> : 'TTS'}
+            {isSpeakingWord ? <Square size={12} /> : 'TTS'}
           </button>
         )}
       </div>
+      {wordRomanization && !pinyinOn && (
+        <span className="reader-view__popover-pinyin">{wordRomanization}</span>
+      )}
       <div className="sentence-popover__bottom-row">
         <span className="sentence-popover__translation">
-          {translation || '\u2026'}
+          {wordTranslation || '\u2026'}
         </span>
         <button
           className="sentence-popover__copy-btn"
@@ -204,10 +148,24 @@ const SentencePopoverInner = forwardRef(function SentencePopoverInner(
           {copied ? <Check size={14} /> : <Copy size={14} />}
         </button>
       </div>
-      {subText && (
-        <div className="sentence-popover__sub">
-          <span className="sentence-popover__sub-label">
-            {subText}{getRomanization(subText) ? <span className="sentence-popover__sub-rom"> ({getRomanization(subText)})</span> : null}: {subTranslation || '\u2026'}
+
+      {/* Translate sentence button */}
+      <button
+        className="sentence-popover__sentence-btn"
+        onClick={(e) => { e.stopPropagation(); onTranslateSentence(); }}
+      >
+        <span>{t('story.translateSentence')}</span>
+        {showSentence ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+
+      {/* Expanded sentence translation */}
+      {showSentence && (
+        <div className="sentence-popover__sentence-section">
+          <span className={`sentence-popover__sentence-text text-target${pinyinOn && romanizer ? ' sentence-popover__original--ruby' : ''}`}>
+            {renderText(sentenceText, 'st')}
+          </span>
+          <span className="sentence-popover__sentence-translation">
+            {sentenceTranslation || '\u2026'}
           </span>
         </div>
       )}

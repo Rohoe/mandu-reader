@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { splitParagraphIntoSentences } from '../lib/sentenceSplitter';
 import { stripMarkdown } from '../lib/renderInline';
@@ -7,6 +7,48 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useT } from '../i18n';
 import { Volume2, Square } from 'lucide-react';
 import SentencePopover from './SentencePopover';
+
+const LANG_LOCALE = { zh: 'zh', yue: 'zh', ko: 'ko', fr: 'fr', es: 'es', en: 'en' };
+
+/**
+ * Splits a text segment into individual word spans with hover/click behavior.
+ * Falls back to a plain span if Intl.Segmenter is unavailable.
+ */
+function WordSegments({ text, langId, sentence, renderChars, keyPrefix, onWordClick, tag: Tag }) {
+  const segments = useMemo(() => segmentWordsInline(text, langId), [text, langId]);
+
+  if (!segments) {
+    const inner = <span>{renderChars(text, keyPrefix)}</span>;
+    return Tag ? <Tag>{inner}</Tag> : inner;
+  }
+
+  const nodes = segments.map((seg, i) => {
+    if (!seg.isWordLike) {
+      return <span key={`p${i}`}>{renderChars(seg.segment, `${keyPrefix}-p${i}`)}</span>;
+    }
+    return (
+      <span
+        key={i}
+        className="reader-view__word"
+        onClick={(e) => { e.stopPropagation(); onWordClick && onWordClick(e, seg.segment, sentence); }}
+      >
+        {renderChars(seg.segment, `${keyPrefix}-w${i}`)}
+      </span>
+    );
+  });
+
+  return Tag ? <Tag>{nodes}</Tag> : <>{nodes}</>;
+}
+
+function segmentWordsInline(text, langId) {
+  if (typeof Intl.Segmenter !== 'function') return null;
+  const locale = LANG_LOCALE[langId];
+  if (!locale) return null;
+  try {
+    const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
+    return [...segmenter.segment(text)];
+  } catch { return null; }
+}
 
 export default function StorySection({
   storyParagraphs,
@@ -19,7 +61,7 @@ export default function StorySection({
   // Grouped props
   ttsProps: { ttsSupported, speakingKey, speakText } = {},
   vocabProps: { lookupVocab, handleVocabClick, activeVocab, onCloseVocab } = {},
-  popoverProps: { popoverRef, getPopoverPosition, selectionPopover, selectionPopoverRef, sentencePopover, sentencePopoverRef, onSentenceClick, onSubSelection, onCloseSelection, onCloseSentence } = {},
+  popoverProps: { popoverRef, getPopoverPosition, selectionPopover, selectionPopoverRef, sentencePopover, sentencePopoverRef, onWordClick, onTranslateSentence, onCloseSelection, onCloseSentence } = {},
   translationProps: { paragraphTranslations, onTranslate, translatingIndex } = {},
 }) {
   const t = useT();
@@ -88,20 +130,7 @@ export default function StorySection({
             <div key={pi} className="reader-view__para-wrapper">
               <p className={`reader-view__paragraph ${isSpeaking ? 'reader-view__paragraph--speaking' : ''}`}>
                 {sentences.map((sentence, si) => (
-                  <span
-                    key={si}
-                    className="reader-view__sentence"
-                    title={t('story.clickToTranslate')}
-                    tabIndex={0}
-                    role="button"
-                    onClick={(e) => onSentenceClick && onSentenceClick(e, sentence, pi)}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'Enter' || e.key === ' ') && onSentenceClick) {
-                        e.preventDefault();
-                        onSentenceClick(e, sentence, pi);
-                      }
-                    }}
-                  >
+                  <span key={si} className="reader-view__sentence">
                     {sentence.segments.map((seg, i) => {
                       if (seg.type === 'bold') {
                         const entry = lookupVocab(seg.content);
@@ -122,8 +151,10 @@ export default function StorySection({
                           </strong>
                         );
                       }
-                      if (seg.type === 'italic') return <em key={i}>{renderChars(seg.content, `${pi}-${si}-em${i}`)}</em>;
-                      return <span key={i}>{renderChars(seg.content, `${pi}-${si}-s${i}`)}</span>;
+                      if (seg.type === 'italic') {
+                        return <WordSegments key={i} text={seg.content} langId={langId} sentence={sentence} renderChars={renderChars} keyPrefix={`${pi}-${si}-em${i}`} onWordClick={onWordClick} tag="em" />;
+                      }
+                      return <WordSegments key={i} text={seg.content} langId={langId} sentence={sentence} renderChars={renderChars} keyPrefix={`${pi}-${si}-s${i}`} onWordClick={onWordClick} />;
                     })}
                   </span>
                 ))}
@@ -208,7 +239,7 @@ export default function StorySection({
         getPopoverPosition={getSentencePopoverPosition}
         romanizer={romanizer}
         pinyinOn={pinyinOn}
-        onSubSelection={onSubSelection}
+        onTranslateSentence={onTranslateSentence}
         langId={langId}
         ttsSupported={ttsSupported}
         speakText={speakText}

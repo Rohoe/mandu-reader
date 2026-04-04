@@ -387,6 +387,7 @@ export default {
   'story.listenToWord': '\u00c9couter le mot',
   'story.listenToSelection': '\u00c9couter la s\u00e9lection',
   'story.listenToSentence': '\u00c9couter la phrase',
+  'story.translateSentence': 'Traduire la phrase',
   'vocab.title': 'Vocabulaire',
   'vocab.fromStory': 'De l\u2019histoire',
   'vocab.additionalExample': 'Exemple suppl\u00e9mentaire',

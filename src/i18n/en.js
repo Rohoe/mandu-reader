@@ -437,6 +437,7 @@ export default {
   'story.listenToWord': 'Listen to word',
   'story.listenToSelection': 'Listen to selection',
   'story.listenToSentence': 'Listen to sentence',
+  'story.translateSentence': 'Translate sentence',
 
   // ── Vocabulary list ───────────────────────────────────────────
   'vocab.title': 'Vocabulary',

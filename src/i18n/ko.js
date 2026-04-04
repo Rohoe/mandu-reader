@@ -384,6 +384,7 @@ export default {
   'story.listenToWord': '단어 듣기',
   'story.listenToSelection': '선택 부분 듣기',
   'story.listenToSentence': '문장 듣기',
+  'story.translateSentence': '문장 번역',
   'vocab.title': '어휘',
   'vocab.fromStory': '이야기에서',
   'vocab.additionalExample': '추가 예문',

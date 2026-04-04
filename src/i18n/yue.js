@@ -384,6 +384,7 @@ export default {
   'story.listenToWord': '聽詞語',
   'story.listenToSelection': '聽選取內容',
   'story.listenToSentence': '聽句子',
+  'story.translateSentence': '翻譯成句',
   'vocab.title': '詞彙',
   'vocab.fromStory': '故仔入面',
   'vocab.additionalExample': '更多例句',

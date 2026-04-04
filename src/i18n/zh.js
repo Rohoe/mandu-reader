@@ -384,6 +384,7 @@ export default {
   'story.listenToWord': '听单词',
   'story.listenToSelection': '听选中内容',
   'story.listenToSentence': '听句子',
+  'story.translateSentence': '翻译整句',
   'vocab.title': '词汇',
   'vocab.fromStory': '故事中',
   'vocab.additionalExample': '更多例句',

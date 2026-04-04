@@ -384,6 +384,7 @@ export default {
   'story.listenToWord': 'Escuchar palabra',
   'story.listenToSelection': 'Escuchar selección',
   'story.listenToSentence': 'Escuchar oración',
+  'story.translateSentence': 'Traducir oración',
   'vocab.title': 'Vocabulario',
   'vocab.fromStory': 'De la historia',
   'vocab.additionalExample': 'Ejemplo adicional',
