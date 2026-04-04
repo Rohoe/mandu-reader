@@ -1,24 +1,45 @@
-import { useCallback, useContext, useRef, useEffect } from 'react';
-import { AppContext } from '../context/AppContext';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import { useAppDispatch } from '../context/useAppSelector';
 import { actions } from '../context/actions';
-import { generateReader, generateReaderStream } from '../lib/api';
-import { parseReaderResponse, normalizeStructuredReader } from '../lib/parser';
 import { getLang } from '../lib/languages';
 import { buildLearnerContext } from '../lib/stats';
 import { buildNarrativeContext } from '../prompts/narrativeReaderPrompt';
-import { useStreamAccumulator } from './useStreamAccumulator';
+import { startBackgroundGeneration, getRunningGeneration } from '../lib/backgroundGeneration';
 
 export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isPending, llmConfig, learnedVocabulary, maxTokens, readerLength, useStructuredOutput = false, nativeLang = 'en', syllabus, generatedReaders, learningActivity, difficultyFeedback }) {
   const dispatch = useAppDispatch();
-  const { pushGeneratedReader } = useContext(AppContext);
   const act = actions(dispatch);
-  const abortRef = useRef(null);
-  const { streamingText, consumeStream, clearStream } = useStreamAccumulator();
+  const [streamingText, setStreamingText] = useState(null);
+  const subRef = useRef(null); // current background generation handle
 
-  // Abort in-flight request on unmount
+  // On mount (or lessonKey change): re-subscribe to an already-running generation
   useEffect(() => {
-    return () => { abortRef.current?.abort(); };
+    const running = lessonKey ? getRunningGeneration(lessonKey) : null;
+    if (running && !running.done) {
+      // Re-subscribe to streaming updates
+      const cb = (text) => setStreamingText(text);
+      running.streamSubscribers.add(cb);
+      // Send current accumulated text immediately
+      if (running.streamText !== null) setStreamingText(running.streamText);
+      subRef.current = { unsubscribeStream: () => running.streamSubscribers.delete(cb) };
+      return () => {
+        running.streamSubscribers.delete(cb);
+        subRef.current = null;
+      };
+    } else {
+      setStreamingText(null);
+      subRef.current = null;
+    }
+  }, [lessonKey]);
+
+  // On unmount: unsubscribe from streaming (but DON'T cancel the generation)
+  useEffect(() => {
+    return () => {
+      if (subRef.current) {
+        subRef.current.unsubscribeStream?.(setStreamingText);
+        subRef.current = null;
+      }
+    };
   }, []);
 
   const handleGenerate = useCallback(async () => {
@@ -41,43 +62,29 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
       return;
     }
 
-    // Abort any previous in-flight request
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    act.startPendingReader(lessonKey);
-    act.clearError();
-
     // Build syllabus-aware generation options
-    const genOptions = { signal: controller.signal, nativeLang };
+    const genOptions = { nativeLang };
 
     if (lessonMeta && syllabus?.lessons) {
       const currentIdx = (lessonMeta.lesson_number || 1) - 1;
       const lessons = syllabus.lessons;
 
-      // Vocabulary focus from syllabus lesson
       if (lessonMeta.vocabulary_focus?.length > 0) {
         genOptions.vocabFocus = lessonMeta.vocabulary_focus;
       }
-
-      // Progressive difficulty hint
       if (lessonMeta.difficulty_hint) {
         genOptions.difficultyHint = lessonMeta.difficulty_hint;
       }
 
-      // Narrative vs standard context threading
       if (syllabus.type === 'narrative') {
         genOptions.narrativeContext = buildNarrativeContext(syllabus, generatedReaders || {}, currentIdx);
         genOptions.narrativeType = syllabus.narrativeType;
       } else if (currentIdx > 0) {
-        // Standard cumulative lesson context
         const previousLessons = lessons.slice(0, currentIdx)
           .map((l, i) => `${i + 1}. ${l.title_en || ''} — vocab themes: ${(l.vocabulary_focus || []).join(', ')}`);
         genOptions.syllabusContext = `This is lesson ${currentIdx + 1} of ${lessons.length} in a course about "${syllabus.topic}".\nPrevious lessons covered:\n${previousLessons.join('\n')}\nCurrent lesson focus: ${(lessonMeta.vocabulary_focus || []).join(', ')}\nBuild upon earlier concepts while introducing new material.`;
       }
 
-      // Grammar progression tracking
       if (generatedReaders) {
         const taughtGrammar = [];
         for (let i = 0; i < currentIdx; i++) {
@@ -92,50 +99,33 @@ export function useReaderGeneration({ lessonKey, lessonMeta, reader, langId, isP
       }
     }
 
-    // Adaptive learner context from SRS/quiz history + difficulty calibration
     const learnerCtx = buildLearnerContext(learnedVocabulary, generatedReaders, learningActivity, readerLangId, {
       difficultyFeedback,
       currentLevel: level,
     });
     if (learnerCtx) genOptions.learnerContext = learnerCtx;
 
+    // Delegate to background generation manager
+    const handle = startBackgroundGeneration(lessonKey, {
+      llmConfig,
+      topic,
+      level,
+      langId: readerLangId,
+      learnedVocabulary,
+      readerLength,
+      maxTokens,
+      useStructuredOutput,
+      genOptions,
+      titleEn: lessonMeta?.title_en,
+      isStandalone: lessonKey.startsWith('standalone_') || lessonKey.startsWith('plan_'),
+      lessonMeta,
+    });
 
-    // Use streaming for Anthropic when not using structured output
-    const useStreaming = llmConfig.provider === 'anthropic' && !useStructuredOutput;
-
-    try {
-      let raw;
-      if (useStreaming) {
-        const stream = generateReaderStream(llmConfig, topic, level, learnedVocabulary, readerLength, maxTokens, null, readerLangId, { ...genOptions });
-        raw = await consumeStream(stream);
-      } else {
-        raw = await generateReader(llmConfig, topic, level, learnedVocabulary, readerLength, maxTokens, null, readerLangId, { ...genOptions, structured: useStructuredOutput });
-      }
-
-      const parsed = useStructuredOutput
-        ? normalizeStructuredReader(raw, readerLangId)
-        : parseReaderResponse(raw, readerLangId);
-      if (parsed.parseWarnings?.length) {
-        act.notify('warning', 'Some sections used fallback parsing');
-      }
-      pushGeneratedReader(lessonKey, { ...parsed, topic, level, langId: readerLangId, lessonKey });
-      // Update sidebar metadata with generated titles so they persist across reloads
-      if ((parsed.titleZh || parsed.titleEn) && (lessonKey.startsWith('standalone_') || lessonKey.startsWith('plan_'))) {
-        act.updateStandaloneReaderMeta({ key: lessonKey, titleZh: parsed.titleZh, titleEn: parsed.titleEn });
-      }
-      act.notify('success', `Reader ready: ${lessonMeta?.title_en || topic}`);
-    } catch (err) {
-      clearStream();
-      if (err.message?.includes('timed out') || err.name === 'AbortError') {
-        act.notify('error', 'Request timed out. Try again or switch to a faster provider.');
-      } else {
-        act.notify('error', `Generation failed: ${err.message.slice(0, 80)}`);
-      }
-    } finally {
-      act.clearPendingReader(lessonKey);
-      if (abortRef.current === controller) abortRef.current = null;
-    }
-  }, [isPending, lessonKey, lessonMeta, reader, langId, llmConfig, learnedVocabulary, readerLength, maxTokens, useStructuredOutput, nativeLang, act, pushGeneratedReader, syllabus, generatedReaders, learningActivity, difficultyFeedback]);
+    // Subscribe to streaming text while we're on this page
+    const streamCb = (text) => setStreamingText(text);
+    handle.subscribeStream(streamCb);
+    subRef.current = handle;
+  }, [isPending, lessonKey, lessonMeta, reader, langId, llmConfig, learnedVocabulary, readerLength, maxTokens, useStructuredOutput, nativeLang, syllabus, generatedReaders, learningActivity, difficultyFeedback]);
 
   return { handleGenerate, act, streamingText };
 }

@@ -80,6 +80,7 @@ import {
   isSupported,
 } from '../lib/fileStorage';
 import { signOut, pushReaderToCloud, pullReaderFromCloud } from '../lib/cloudSync';
+import { initBackgroundGeneration } from '../lib/backgroundGeneration';
 import { DEMO_READER_KEY, DEMO_READERS, DEMO_NARRATIVE } from '../lib/demoReader';
 
 // ── Initial state ─────────────────────────────────────────────
@@ -291,6 +292,9 @@ export function AppProvider({ children }) {
         });
     }
   }
+
+  // Wire up background generation manager so it can dispatch + save readers
+  initBackgroundGeneration(dispatch, pushGeneratedReader);
 
   // Restores from backup: dispatches pure state update, then persists readers to localStorage
   function performRestore(data) {

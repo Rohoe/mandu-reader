@@ -349,6 +349,13 @@ export default {
   'progress.tip4': '提示：试试 AI 导师来提问故事相关问题',
   'progress.tip5': '提示：导出词汇到 Anki 进行离线复习',
 
+  // ── Background generation ───────────────────────────────────
+  'bgGen.generating': '正在生成阅读…',
+  'bgGen.generatingCount': '正在生成 {count} 篇阅读…',
+  'bgGen.elapsed': '{seconds}秒',
+  'bgGen.done': '阅读已就绪！',
+  'bgGen.tapToView': '点击查看',
+
   // ── Flashcard enhancements ───────────────────────────────────
   'flashcard.leechBadge': '困难词',
   'flashcard.leechHint': '这张卡片已多次答错',

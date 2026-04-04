@@ -401,6 +401,13 @@ export default {
   'progress.tip4': 'Tip: Try the AI Tutor to ask questions about the story',
   'progress.tip5': 'Tip: Export vocabulary to Anki for offline review',
 
+  // ── Background generation ───────────────────────────────────
+  'bgGen.generating': 'Generating reader…',
+  'bgGen.generatingCount': 'Generating {count} readers…',
+  'bgGen.elapsed': '{seconds}s',
+  'bgGen.done': 'Reader ready!',
+  'bgGen.tapToView': 'Tap to view',
+
   // ── Flashcard enhancements ───────────────────────────────────
   'flashcard.leechBadge': 'Struggling',
   'flashcard.leechHint': 'This card has been missed multiple times',

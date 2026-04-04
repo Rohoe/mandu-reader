@@ -349,6 +349,13 @@ export default {
   'progress.tip4': 'Consejo: Prueba el tutor IA para hacer preguntas sobre la historia',
   'progress.tip5': 'Consejo: Exporta vocabulario a Anki para repasar sin conexión',
 
+  // ── Background generation ───────────────────────────────────
+  'bgGen.generating': 'Generando lector…',
+  'bgGen.generatingCount': 'Generando {count} lectores…',
+  'bgGen.elapsed': '{seconds}s',
+  'bgGen.done': '¡Lector listo!',
+  'bgGen.tapToView': 'Toca para ver',
+
   // ── Flashcard enhancements ───────────────────────────────────
   'flashcard.leechBadge': 'Difícil',
   'flashcard.leechHint': 'Esta tarjeta se ha fallado varias veces',

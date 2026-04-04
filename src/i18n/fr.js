@@ -352,6 +352,13 @@ export default {
   'progress.tip4': 'Conseil : Essayez le tuteur IA pour poser des questions sur l\'histoire',
   'progress.tip5': 'Conseil : Exportez le vocabulaire vers Anki pour r\u00e9viser hors ligne',
 
+  // ── Background generation ───────────────────────────────────
+  'bgGen.generating': 'G\u00e9n\u00e9ration du lecteur…',
+  'bgGen.generatingCount': 'G\u00e9n\u00e9ration de {count} lecteurs…',
+  'bgGen.elapsed': '{seconds}s',
+  'bgGen.done': 'Lecteur pr\u00eat !',
+  'bgGen.tapToView': 'Appuyez pour voir',
+
   // ── Flashcard enhancements ───────────────────────────────────
   'flashcard.leechBadge': 'Difficile',
   'flashcard.leechHint': 'Cette carte a \u00e9t\u00e9 manqu\u00e9e plusieurs fois',

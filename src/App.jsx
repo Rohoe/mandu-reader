@@ -26,6 +26,7 @@ import ImportModal from './components/PathImportExport/ImportModal';
 import ExportModal from './components/PathImportExport/ExportModal';
 import './components/PathImportExport/PathImportExport.css';
 import MilestoneCelebration from './components/MilestoneCelebration';
+import BackgroundGenerationBar from './components/BackgroundGenerationBar';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingIndicator from './components/LoadingIndicator';
 import PWABanner from './components/PWABanner';
@@ -584,6 +585,24 @@ function AppShell() {
           />
         </ErrorBoundary>
       )}
+
+      {/* ─ Background generation progress ────────────────── */}
+      <BackgroundGenerationBar
+        activeLessonKey={activeLessonKey}
+        onNavigateToReader={(key) => {
+          // Navigate to the generating reader: check if it's a syllabus lesson or standalone
+          if (key.startsWith('standalone_') || key.startsWith('plan_')) {
+            setStandaloneKey(key);
+            setSidebarOpen(false);
+          } else if (key.startsWith('lesson_')) {
+            // Parse lesson_<syllabusId>_<lessonIndex>
+            const parts = key.split('_');
+            const idx = parseInt(parts.pop(), 10);
+            const syllabusId = parts.slice(1).join('_');
+            handleSelectLesson(syllabusId, idx);
+          }
+        }}
+      />
 
       {/* ─ Toast notification ────────────────────────────── */}
       <Notification />

@@ -349,6 +349,13 @@ export default {
   'progress.tip4': '팁: AI 튜터에게 이야기에 대해 질문해 보세요',
   'progress.tip5': '팁: 어휘를 Anki로 내보내 오프라인 복습하세요',
 
+  // ── Background generation ───────────────────────────────────
+  'bgGen.generating': '리더 생성 중…',
+  'bgGen.generatingCount': '{count}개 리더 생성 중…',
+  'bgGen.elapsed': '{seconds}초',
+  'bgGen.done': '리더가 준비되었습니다!',
+  'bgGen.tapToView': '탭하여 보기',
+
   // ── Flashcard enhancements ───────────────────────────────────
   'flashcard.leechBadge': '어려운 단어',
   'flashcard.leechHint': '이 카드는 여러 번 틀렸습니다',

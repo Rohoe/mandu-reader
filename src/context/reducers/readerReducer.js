@@ -128,8 +128,14 @@ export function readerReducer(state, action) {
     case UNARCHIVE_STANDALONE_READER:
       return { ...state, standaloneReaders: state.standaloneReaders.map(r => r.key === action.payload ? { ...r, archived: false } : r) };
 
-    case START_PENDING_READER:
-      return { ...state, pendingReaders: { ...state.pendingReaders, [action.payload]: true } };
+    case START_PENDING_READER: {
+      // Support both legacy string payload and enriched object payload
+      const key = typeof action.payload === 'string' ? action.payload : action.payload.key;
+      const meta = typeof action.payload === 'string'
+        ? { startedAt: Date.now() }
+        : { startedAt: action.payload.startedAt || Date.now(), topic: action.payload.topic, langId: action.payload.langId };
+      return { ...state, pendingReaders: { ...state.pendingReaders, [key]: meta } };
+    }
 
     case CLEAR_PENDING_READER: {
       const next = { ...state.pendingReaders };

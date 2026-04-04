@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React, { createContext } from 'react';
+import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 
 // ── Mocks ────────────────────────────────────────────────────
 
 const mockDispatch = vi.fn();
-const mockPushGeneratedReader = vi.fn();
 const mockAct = {
   startPendingReader: vi.fn(),
   clearPendingReader: vi.fn(),
@@ -22,99 +21,56 @@ vi.mock('../context/actions', () => ({
   actions: () => mockAct,
 }));
 
-const mockGenerateReader = vi.fn();
-const mockGenerateReaderStream = vi.fn();
-vi.mock('../lib/api', () => ({
-  generateReader: (...args) => mockGenerateReader(...args),
-  generateReaderStream: (...args) => mockGenerateReaderStream(...args),
-}));
-
-const mockParseReaderResponse = vi.fn();
-const mockNormalizeStructuredReader = vi.fn();
-vi.mock('../lib/parser', () => ({
-  parseReaderResponse: (...args) => mockParseReaderResponse(...args),
-  normalizeStructuredReader: (...args) => mockNormalizeStructuredReader(...args),
-}));
-
 vi.mock('../lib/languages', () => ({
   getLang: () => ({ prompts: { titleFieldKey: 'title_zh' } }),
 }));
 
-// Mock AppContext with a real createContext — factory can use imports
-vi.mock('../context/AppContext', async () => {
-  const { createContext: cc } = await import('react');
-  return { AppContext: cc(null) };
-});
+// Mock backgroundGeneration module
+const mockStartBackgroundGeneration = vi.fn(() => ({
+  subscribeStream: vi.fn(),
+  unsubscribeStream: vi.fn(),
+  cancel: vi.fn(),
+}));
+const mockGetRunningGeneration = vi.fn(() => null);
+vi.mock('../lib/backgroundGeneration', () => ({
+  startBackgroundGeneration: (...args) => mockStartBackgroundGeneration(...args),
+  getRunningGeneration: (...args) => mockGetRunningGeneration(...args),
+}));
 
-import { AppContext } from '../context/AppContext';
 import { useReaderGeneration } from './useReaderGeneration';
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function wrapper({ children }) {
-  return React.createElement(
-    AppContext.Provider,
-    { value: { pushGeneratedReader: mockPushGeneratedReader } },
-    children
-  );
-}
-
-// Use openai provider by default so tests go through non-streaming generateReader path
 const baseLlmConfig = { provider: 'openai', apiKey: 'test-key', model: 'test' };
 const anthropicLlmConfig = { provider: 'anthropic', apiKey: 'test-key', model: 'test' };
 const baseReader = { topic: 'cats', level: 2, langId: 'zh' };
-const parsedResult = {
-  titleZh: '小猫', titleEn: 'Kitten', story: 'Story text.',
-  vocabulary: [], questions: [], grammarNotes: [], ankiJson: [],
-  parseWarnings: [], parseError: null, langId: 'zh',
-};
 
 // ── Tests ────────────────────────────────────────────────────
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockGenerateReader.mockResolvedValue('raw markdown');
-  mockParseReaderResponse.mockReturnValue(parsedResult);
 });
 
 describe('useReaderGeneration', () => {
-  it('calls generateReader with correct params on handleGenerate', async () => {
+  it('delegates to startBackgroundGeneration with correct params', async () => {
     const { result } = renderHook(
       () => useReaderGeneration({
         lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
         llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
       }),
-      { wrapper }
     );
 
     await act(async () => { await result.current.handleGenerate(); });
 
-    expect(mockGenerateReader).toHaveBeenCalledOnce();
-    const args = mockGenerateReader.mock.calls[0];
-    expect(args[0]).toBe(baseLlmConfig);
-    expect(args[1]).toBe('cats');
-    expect(args[2]).toBe(2);
-    expect(args[7]).toBe('zh');
-  });
-
-  it('parses response and pushes generated reader on success', async () => {
-    const { result } = renderHook(
-      () => useReaderGeneration({
-        lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
-        llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
-      }),
-      { wrapper }
-    );
-
-    await act(async () => { await result.current.handleGenerate(); });
-
-    expect(mockParseReaderResponse).toHaveBeenCalledWith('raw markdown', 'zh');
-    expect(mockPushGeneratedReader).toHaveBeenCalledOnce();
-    const pushed = mockPushGeneratedReader.mock.calls[0];
-    expect(pushed[0]).toBe('standalone_123');
-    expect(pushed[1].topic).toBe('cats');
-    expect(pushed[1].level).toBe(2);
-    expect(pushed[1].langId).toBe('zh');
+    expect(mockStartBackgroundGeneration).toHaveBeenCalledOnce();
+    const [key, opts] = mockStartBackgroundGeneration.mock.calls[0];
+    expect(key).toBe('standalone_123');
+    expect(opts.llmConfig).toBe(baseLlmConfig);
+    expect(opts.topic).toBe('cats');
+    expect(opts.level).toBe(2);
+    expect(opts.langId).toBe('zh');
+    expect(opts.readerLength).toBe(300);
+    expect(opts.maxTokens).toBe(2000);
   });
 
   it('does nothing when isPending is true', async () => {
@@ -123,12 +79,11 @@ describe('useReaderGeneration', () => {
         lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: true,
         llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
       }),
-      { wrapper }
     );
 
     await act(async () => { await result.current.handleGenerate(); });
 
-    expect(mockGenerateReader).not.toHaveBeenCalled();
+    expect(mockStartBackgroundGeneration).not.toHaveBeenCalled();
   });
 
   it('does nothing when neither lessonMeta nor reader is provided', async () => {
@@ -137,62 +92,25 @@ describe('useReaderGeneration', () => {
         lessonKey: 'standalone_123', lessonMeta: null, reader: null, langId: 'zh', isPending: false,
         llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
       }),
-      { wrapper }
     );
 
     await act(async () => { await result.current.handleGenerate(); });
 
-    expect(mockGenerateReader).not.toHaveBeenCalled();
+    expect(mockStartBackgroundGeneration).not.toHaveBeenCalled();
   });
 
-  it('uses normalizeStructuredReader when useStructuredOutput is true', async () => {
-    mockNormalizeStructuredReader.mockReturnValue(parsedResult);
+  it('passes useStructuredOutput flag to background generation', async () => {
     const { result } = renderHook(
       () => useReaderGeneration({
         lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
         llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: true,
       }),
-      { wrapper }
     );
 
     await act(async () => { await result.current.handleGenerate(); });
 
-    expect(mockNormalizeStructuredReader).toHaveBeenCalledWith('raw markdown', 'zh');
-    expect(mockParseReaderResponse).not.toHaveBeenCalled();
-  });
-
-  it('handles API error gracefully', async () => {
-    mockGenerateReader.mockRejectedValue(new Error('API rate limit exceeded'));
-    const { result } = renderHook(
-      () => useReaderGeneration({
-        lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
-        llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
-      }),
-      { wrapper }
-    );
-
-    await act(async () => { await result.current.handleGenerate(); });
-
-    expect(mockPushGeneratedReader).not.toHaveBeenCalled();
-    expect(mockAct.notify).toHaveBeenCalledWith('error', expect.stringContaining('API rate limit'));
-  });
-
-  it('handles timeout/abort error with specific message', async () => {
-    const abortErr = new Error('timed out');
-    abortErr.name = 'AbortError';
-    mockGenerateReader.mockRejectedValue(abortErr);
-    const { result } = renderHook(
-      () => useReaderGeneration({
-        lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
-        llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
-      }),
-      { wrapper }
-    );
-
-    await act(async () => { await result.current.handleGenerate(); });
-
-    expect(mockPushGeneratedReader).not.toHaveBeenCalled();
-    expect(mockAct.notify).toHaveBeenCalledWith('error', expect.stringContaining('timed out'));
+    const [, opts] = mockStartBackgroundGeneration.mock.calls[0];
+    expect(opts.useStructuredOutput).toBe(true);
   });
 
   it('uses lessonMeta when provided (over reader)', async () => {
@@ -205,74 +123,106 @@ describe('useReaderGeneration', () => {
         lessonKey: 'lesson_s1_0', lessonMeta, reader: baseReader, langId: 'zh', isPending: false,
         llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
       }),
-      { wrapper }
     );
 
     await act(async () => { await result.current.handleGenerate(); });
 
-    const args = mockGenerateReader.mock.calls[0];
-    expect(args[1]).toContain('我的课');
-    expect(args[2]).toBe(4);
+    const [, opts] = mockStartBackgroundGeneration.mock.calls[0];
+    expect(opts.topic).toContain('我的课');
+    expect(opts.level).toBe(4);
   });
 
-  it('aborts in-flight request on unmount', async () => {
-    let rejectFn;
-    mockGenerateReader.mockReturnValue(new Promise((_, reject) => { rejectFn = reject; }));
+  it('does not abort generation on unmount (survives navigation)', async () => {
+    const mockCancel = vi.fn();
+    mockStartBackgroundGeneration.mockReturnValue({
+      subscribeStream: vi.fn(),
+      unsubscribeStream: vi.fn(),
+      cancel: mockCancel,
+    });
 
     const { result, unmount } = renderHook(
       () => useReaderGeneration({
         lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
         llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
       }),
-      { wrapper }
     );
 
-    // Start generation (don't await)
-    let genPromise;
-    act(() => { genPromise = result.current.handleGenerate(); });
+    await act(async () => { await result.current.handleGenerate(); });
 
     unmount();
 
-    // Reject the dangling promise and wait for it to settle
-    rejectFn(new Error('aborted'));
-    await genPromise;
+    // cancel should NOT be called — generation survives unmount
+    expect(mockCancel).not.toHaveBeenCalled();
   });
 
-  it('uses streaming for Anthropic provider', async () => {
-    // Create async generator mock
-    async function* fakeStream() {
-      yield 'Hello ';
-      yield 'World';
-    }
-    mockGenerateReaderStream.mockReturnValue(fakeStream());
+  it('subscribes to stream updates on generate', async () => {
+    const mockSubscribe = vi.fn();
+    mockStartBackgroundGeneration.mockReturnValue({
+      subscribeStream: mockSubscribe,
+      unsubscribeStream: vi.fn(),
+      cancel: vi.fn(),
+    });
 
     const { result } = renderHook(
       () => useReaderGeneration({
         lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
         llmConfig: anthropicLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
       }),
-      { wrapper }
     );
 
     await act(async () => { await result.current.handleGenerate(); });
 
-    expect(mockGenerateReaderStream).toHaveBeenCalledOnce();
-    expect(mockGenerateReader).not.toHaveBeenCalled();
-    expect(mockParseReaderResponse).toHaveBeenCalledWith('Hello World', 'zh');
+    expect(mockSubscribe).toHaveBeenCalledOnce();
   });
 
-  it('clears pending reader even on error', async () => {
-    mockGenerateReader.mockRejectedValue(new Error('fail'));
+  it('re-subscribes to running generation on mount', () => {
+    const mockSubscribers = new Set();
+    mockGetRunningGeneration.mockReturnValue({
+      done: false,
+      streamText: 'partial text',
+      streamSubscribers: mockSubscribers,
+    });
+
     const { result } = renderHook(
       () => useReaderGeneration({
-        lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: false,
+        lessonKey: 'standalone_123', lessonMeta: null, reader: baseReader, langId: 'zh', isPending: true,
         llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300, useStructuredOutput: false,
       }),
-      { wrapper }
+    );
+
+    // Should have subscribed to the running generation
+    expect(mockSubscribers.size).toBe(1);
+    // Should show the current streaming text
+    expect(result.current.streamingText).toBe('partial text');
+  });
+
+  it('passes syllabus context when lessonMeta and syllabus are provided', async () => {
+    const lessonMeta = {
+      title_zh: '第一课', title_en: 'Lesson 1', lesson_number: 2,
+      level: 3, langId: 'zh', vocabulary_focus: ['你好', '谢谢'],
+      difficulty_hint: 'moderate',
+    };
+    const syllabus = {
+      id: 's1', topic: 'Basic Chinese', type: 'standard', langId: 'zh',
+      lessons: [
+        { title_en: 'Greetings', vocabulary_focus: ['你好'] },
+        { title_en: 'Thanks', vocabulary_focus: ['谢谢'] },
+      ],
+    };
+
+    const { result } = renderHook(
+      () => useReaderGeneration({
+        lessonKey: 'lesson_s1_1', lessonMeta, reader: null, langId: 'zh', isPending: false,
+        llmConfig: baseLlmConfig, learnedVocabulary: {}, maxTokens: 2000, readerLength: 300,
+        useStructuredOutput: false, syllabus, generatedReaders: {},
+      }),
     );
 
     await act(async () => { await result.current.handleGenerate(); });
 
-    expect(mockAct.clearPendingReader).toHaveBeenCalledWith('standalone_123');
+    const [, opts] = mockStartBackgroundGeneration.mock.calls[0];
+    expect(opts.genOptions.vocabFocus).toEqual(['你好', '谢谢']);
+    expect(opts.genOptions.difficultyHint).toBe('moderate');
+    expect(opts.genOptions.syllabusContext).toContain('lesson 2 of 2');
   });
 });
