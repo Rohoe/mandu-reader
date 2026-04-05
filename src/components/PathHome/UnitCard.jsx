@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useT } from '../../i18n';
 import { Check } from 'lucide-react';
+import TranslatableText from '../TranslatableText';
 
 export default function UnitCard({
   unit, index, progress, isGenerating, isEditing, canGenerate,
   onGenerate, onClick, onEdit, onSaveEdit, onCancelEdit,
+  langId, nativeLang, generatedInTargetLang,
 }) {
   const t = useT();
   const hasContent = unit.syllabusId && progress.status !== 'pending';
@@ -32,7 +34,14 @@ export default function UnitCard({
         </div>
         <div className="unit-card__content">
           <div className="unit-card__title">{unit.title}</div>
-          <div className="unit-card__desc">{unit.description}</div>
+          <TranslatableText
+            text={unit.description}
+            langId={langId}
+            nativeLang={nativeLang}
+            enabled={!!generatedInTargetLang}
+            tag="div"
+            className="unit-card__desc"
+          />
           <div className="unit-card__meta">
             <span className={`unit-card__style unit-card__style--${unit.style}`}>
               {t(`unitStyle.${unit.style}`) || unit.style}

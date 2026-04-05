@@ -176,7 +176,7 @@ describe('generateSyllabus with learnerProfile', () => {
     }));
     await generateSyllabus(BASE_CONFIG, 'food', 3, 6, 'zh', 'en', { learnerProfile: 'Known vocabulary: 85 words' });
     const lastCall = buildSyllabusPrompt.mock.calls.at(-1);
-    expect(lastCall[5]).toEqual({ learnerProfile: 'Known vocabulary: 85 words' });
+    expect(lastCall[5]).toMatchObject({ learnerProfile: 'Known vocabulary: 85 words' });
   });
 });
 

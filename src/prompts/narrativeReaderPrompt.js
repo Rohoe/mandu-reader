@@ -1,4 +1,4 @@
-export function buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars = 1200, nativeLangName = 'English', { difficultyHint, narrativeType } = {}) {
+export function buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars = 1200, nativeLangName = 'English', { difficultyHint, narrativeType, useTargetLang } = {}) {
   const p = langConfig.prompts;
   const profName = langConfig.proficiency.name;
 
@@ -103,7 +103,7 @@ Identify ${grammarRange} key ${p.grammarContext} used in the story. For each pat
 - Example sentence taken directly from the story
 
 ### 6. Suggested Topics
-2-3 follow-up topic ideas (in ${nativeLangName}), one per line. Suggest topics that complement this story.
+2-3 follow-up topic ideas (in ${useTargetLang ? p.targetLanguage : nativeLangName}), one per line. Suggest topics that complement this story.
 ${accuracySection}
 ### ${accuracySection ? '8' : '7'}. Story So Far
 Write a concise 3-5 sentence summary of the complete story up to and including this chapter. This will be used as context for generating the next chapter. Include key plot developments, character status, and any unresolved threads.

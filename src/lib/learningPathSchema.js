@@ -130,7 +130,7 @@ export function exportPath(path) {
 /**
  * Create a new empty Learning Path object from wizard profile data.
  */
-export function createLearningPath({ title, description, langId, level, nativeLang, profile, units, continuationContext }) {
+export function createLearningPath({ title, description, langId, level, nativeLang, profile, units, continuationContext, generatedInTargetLang }) {
   return {
     id: `path_${Date.now().toString(36)}`,
     title,
@@ -138,6 +138,7 @@ export function createLearningPath({ title, description, langId, level, nativeLa
     langId,
     level,
     nativeLang: nativeLang || 'en',
+    ...(generatedInTargetLang && { generatedInTargetLang: true }),
     profile: profile || null,
     units: (units || []).map((u, i) => ({
       unitIndex: i,

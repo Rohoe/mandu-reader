@@ -1,10 +1,12 @@
 import { getLessonTitle } from '../../lib/languages';
 import { getProvider } from '../../lib/providers';
 import { useT } from '../../i18n';
+import TranslatableText from '../TranslatableText';
 
 export default function ReaderPregenerate({
   lessonMeta, langId, readerLength, setReaderLength,
   onGenerate, isPending, llmConfig, activeProvider,
+  nativeLang, generatedInTargetLang,
 }) {
   const t = useT();
   return (
@@ -15,7 +17,15 @@ export default function ReaderPregenerate({
             <p className="reader-view__lesson-num text-subtle font-display">{t('reader.lessonNum', { number: lessonMeta.lesson_number })}</p>
             <h2 className="text-target-title reader-view__lesson-title">{getLessonTitle(lessonMeta, langId)}</h2>
             <p className="reader-view__lesson-en font-display text-muted">{lessonMeta.title_en}</p>
-            {(lessonMeta.chapter_summary || lessonMeta.description) && <p className="reader-view__lesson-desc">{lessonMeta.chapter_summary || lessonMeta.description}</p>}
+            {(lessonMeta.chapter_summary || lessonMeta.description) && (
+              <TranslatableText
+                text={lessonMeta.chapter_summary || lessonMeta.description}
+                langId={langId}
+                nativeLang={nativeLang}
+                enabled={!!generatedInTargetLang}
+                className="reader-view__lesson-desc"
+              />
+            )}
             {lessonMeta.vocabulary_focus && (
               <p className="reader-view__vocab-focus text-subtle">
                 {t('reader.pregen.focus')} {Array.isArray(lessonMeta.vocabulary_focus)

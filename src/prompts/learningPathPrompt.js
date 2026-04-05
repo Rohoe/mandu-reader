@@ -5,9 +5,10 @@
  * a structured plan of units (future syllabi) with style annotations.
  */
 
-export function buildLearningPathPrompt(langConfig, profile, nativeLangName = 'English') {
+export function buildLearningPathPrompt(langConfig, profile, nativeLangName = 'English', { useTargetLang } = {}) {
   const p = langConfig.prompts;
   const profName = langConfig.proficiency.name;
+  const descLang = useTargetLang ? p.targetLanguage : nativeLangName;
 
   const interestSection = profile.interests
     ? `Interests: ${profile.interests}\n`
@@ -49,12 +50,12 @@ For units with style "narrative", include a \`source_material\` object with rele
 
 Return a JSON object:
 {
-  "title": "Learning path title in ${nativeLangName}",
-  "description": "2-4 sentence overview of what the learner will achieve (in ${nativeLangName})",
+  "title": "Learning path title in ${descLang}",
+  "description": "2-4 sentence overview of what the learner will achieve (in ${descLang})",
   "units": [
     {
-      "title": "Unit title in ${nativeLangName}",
-      "description": "2-3 sentence description of focus and what the learner gains (in ${nativeLangName})",
+      "title": "Unit title in ${descLang}",
+      "description": "2-3 sentence description of focus and what the learner gains (in ${descLang})",
       "estimated_lessons": number (6-12),
       "style": "thematic|narrative|exploratory",
       "vocab_themes": ["3-5 vocabulary theme keywords"],
@@ -73,9 +74,10 @@ Return ONLY valid JSON. No explanation, no markdown fences.`;
 /**
  * Prompt to extend an existing Learning Path with additional units.
  */
-export function buildExtendPathPrompt(langConfig, path, additionalCount, nativeLangName = 'English') {
+export function buildExtendPathPrompt(langConfig, path, additionalCount, nativeLangName = 'English', { useTargetLang } = {}) {
   const p = langConfig.prompts;
   const profName = langConfig.proficiency.name;
+  const descLang = useTargetLang ? p.targetLanguage : nativeLangName;
 
   const existingUnits = path.units.map((u, i) =>
     `${i + 1}. "${u.title}" (${u.style}) — ${u.description}`
@@ -114,8 +116,8 @@ Return a JSON object:
 {
   "units": [
     {
-      "title": "Unit title in ${nativeLangName}",
-      "description": "2-3 sentences (in ${nativeLangName})",
+      "title": "Unit title in ${descLang}",
+      "description": "2-3 sentences (in ${descLang})",
       "estimated_lessons": number (6-12),
       "style": "thematic|narrative|exploratory",
       "vocab_themes": ["3-5 keywords"],

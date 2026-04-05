@@ -563,6 +563,17 @@ export function getLanguageIds() {
 
 export const DEFAULT_LANG_ID = 'zh';
 
+/**
+ * Whether the learner's level qualifies as "advanced" for target-language immersion.
+ * CJK (zh, yue, ko): level >= 5.  CEFR (fr, es, en): level >= 4 (B2).
+ */
+export function isAdvancedLevel(langId, level) {
+  const cfg = getLang(langId);
+  if (!cfg) return false;
+  const threshold = cfg.scriptType === 'cjk' || cfg.scriptType === 'syllabic' ? 5 : 4;
+  return Number(level) >= threshold;
+}
+
 /** Get the target-language title from a lesson object, regardless of language. */
 export function getLessonTitle(lesson, langId) {
   if (!lesson) return '';

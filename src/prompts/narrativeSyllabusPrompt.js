@@ -1,4 +1,4 @@
-export function buildNarrativeSyllabusPrompt(langConfig, sourceMaterial, narrativeType, level, lessonCount, nativeLangName = 'English', { learnerProfile } = {}) {
+export function buildNarrativeSyllabusPrompt(langConfig, sourceMaterial, narrativeType, level, lessonCount, nativeLangName = 'English', { learnerProfile, useTargetLang } = {}) {
   const p = langConfig.prompts;
   const profName = langConfig.proficiency.name;
 
@@ -21,6 +21,9 @@ export function buildNarrativeSyllabusPrompt(langConfig, sourceMaterial, narrati
 - For single-narrative works (novels, epics): follow the narrative arc but center lessons on pivotal scenes — moments of crisis, confrontation, reversal, or revelation.
 - Hook the reader early: Lesson 1 should feature a vivid, dramatic scene or a compelling character — not abstract background or mythological preamble.
 - Simplify language to match the target proficiency level while maintaining the essence of the original.`;
+
+  // When useTargetLang is true, descriptive fields are written in the target language
+  const descLang = useTargetLang ? p.targetLanguage : nativeLangName;
 
   const learnerSection = learnerProfile
     ? `\n## Learner Profile\nThe student has prior experience. Adapt the syllabus — skip mastered concepts, build on existing knowledge.\n${learnerProfile}\n`
@@ -53,9 +56,9 @@ ${learnerSection}
 Return a JSON object with the following structure:
 {
   "narrative_arc": {
-    "overview": "3-5 sentence overview of the complete arc, highlighting the work's central tensions and why it endures (in ${nativeLangName})",
+    "overview": "3-5 sentence overview of the complete arc, highlighting the work's central tensions and why it endures (in ${descLang})",
     "total_planned_lessons": number,
-    "characters": [{ "name": "target language name", "role": "brief role description in ${nativeLangName}", "introduced_in": lesson_number }],
+    "characters": [{ "name": "target language name", "role": "brief role description in ${descLang}", "introduced_in": lesson_number }],
     "settings": ["key locations or time periods"]
   },
   "lessons": [
@@ -63,10 +66,10 @@ Return a JSON object with the following structure:
       "lesson_number": integer (1-${lessonCount}),
       "${p.titleFieldKey}": ${p.titleInstruction},
       "title_en": "${nativeLangName} lesson title",
-      "description": "one sentence in ${nativeLangName}",
+      "description": "one sentence in ${descLang}",
       "vocabulary_focus": ["3-5 keywords drawn from this specific lesson's content, not generic topic labels"],
       "difficulty_hint": "review|core|stretch",
-      "chapter_summary": "2-3 sentences describing the dramatic action or turning point of this chapter — what characters DO, not what period this covers (in ${nativeLangName})",
+      "chapter_summary": "2-3 sentences describing the dramatic action or turning point of this chapter — what characters DO, not what period this covers (in ${descLang})",
       "characters": ["character names featured"],
       "setting": "where/when this chapter takes place",
       "narrative_position": "setup|rising|climax|falling|resolution — assign based on dramatic tension, not chronological position",
@@ -77,7 +80,7 @@ Return a JSON object with the following structure:
     "summary": "overview of what remains",
     "segments": [{ "start_lesson": N, "end_lesson": M, "arc_phase": "rising|climax|falling|resolution", "summary": "what this segment covers" }]
   },
-  "suggested_topics": ["2-3 related narrative ideas in ${nativeLangName}"]
+  "suggested_topics": ["2-3 related narrative ideas in ${descLang}"]
 }
 
 Return ONLY valid JSON. No explanation, no markdown fences.`;

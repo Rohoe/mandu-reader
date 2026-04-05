@@ -497,6 +497,40 @@ a:hover { text-decoration: underline; }
   }
 }
 
+/* ── Translatable text (target-language descriptions) ──────── */
+.translatable-text {
+  position: relative;
+}
+.translatable-text__btn {
+  display: inline-block;
+  vertical-align: middle;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  padding: 1px 5px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  margin-left: var(--space-2);
+  line-height: 1.4;
+}
+.translatable-text:hover .translatable-text__btn { opacity: 0.7; }
+.translatable-text__btn:hover { opacity: 1 !important; background: var(--color-accent-light); color: var(--color-accent); border-color: var(--color-accent-dim); }
+.translatable-text__btn--active { opacity: 0.5; color: var(--color-accent); border-color: var(--color-accent-dim); }
+.translatable-text__btn--loading { opacity: 0.5; animation: translatePulse 1s ease-in-out infinite; }
+.translatable-text__translation {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-border);
+}
+@media (pointer: coarse) {
+  .translatable-text__btn { opacity: 0.5; }
+}
+
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

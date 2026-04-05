@@ -5,15 +5,17 @@ import { buildReviewContext, getLevelUpRecommendation } from '../../lib/stats';
 import { useT } from '../../i18n';
 import { Check, ArrowRight, ChevronDown, ChevronRight } from 'lucide-react';
 import LoadingIndicator from '../LoadingIndicator';
+import TranslatableText from '../TranslatableText';
 import './SyllabusHome.css';
 
 export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDelete, onArchive, onExtend, onGenerateReview }) {
-  const { loading, loadingMessage, generatedReaders, learnedVocabulary, learningActivity } = useAppSelector(s => ({
+  const { loading, loadingMessage, generatedReaders, learnedVocabulary, learningActivity, nativeLang } = useAppSelector(s => ({
     loading: s.loading,
     loadingMessage: s.loadingMessage,
     generatedReaders: s.generatedReaders,
     learnedVocabulary: s.learnedVocabulary,
     learningActivity: s.learningActivity,
+    nativeLang: s.nativeLang || 'en',
   }));
   const t = useT();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -123,7 +125,13 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
       {summary && (
         <section className="syllabus-home__section">
           <h2 className="syllabus-home__section-title">{t('syllabusHome.summary')}</h2>
-          <p className="syllabus-home__summary">{summary}</p>
+          <TranslatableText
+            text={summary}
+            langId={langId}
+            nativeLang={nativeLang}
+            enabled={!!syllabus.generatedInTargetLang}
+            className="syllabus-home__summary"
+          />
         </section>
       )}
 
@@ -222,7 +230,13 @@ export default function SyllabusHome({ syllabus, progress, onSelectLesson, onDel
                     </span>
                     <span className="syllabus-home__lesson-en text-muted">{lesson.title_en}</span>
                     {syllabus.type === 'narrative' && lesson.chapter_summary && (
-                      <p className="syllabus-home__chapter-summary">{lesson.chapter_summary}</p>
+                      <TranslatableText
+                        text={lesson.chapter_summary}
+                        langId={langId}
+                        nativeLang={nativeLang}
+                        enabled={!!syllabus.generatedInTargetLang}
+                        className="syllabus-home__chapter-summary"
+                      />
                     )}
                   </span>
                   <span className="syllabus-home__lesson-cta text-muted">

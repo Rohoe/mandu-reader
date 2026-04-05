@@ -6,7 +6,7 @@
  *   { provider, apiKey, model, baseUrl }
  */
 
-import { getLang, DEFAULT_LANG_ID } from './languages';
+import { getLang, DEFAULT_LANG_ID, isAdvancedLevel } from './languages';
 import { getNativeLang } from './nativeLanguages';
 import { buildSyllabusPrompt } from '../prompts/syllabusPrompt';
 import { buildReaderSystem } from '../prompts/readerSystemPrompt';
@@ -323,11 +323,12 @@ export async function* generateReaderStream(llmConfig, topic, level, learnedWord
 
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
+  const useTargetLang = isAdvancedLevel(langId, level);
   const rangePadding = targetChars <= 300 ? 50 : 100;
   const charRange = `${targetChars - rangePadding}-${targetChars + rangePadding}`;
   const system = narrativeType
-    ? buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, narrativeType })
-    : buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint });
+    ? buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, narrativeType, useTargetLang })
+    : buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, useTargetLang });
   const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext, narrativeContext });
 
   const { signal, cleanup } = createTimeoutController(externalSignal);
@@ -344,7 +345,8 @@ export async function* generateReaderStream(llmConfig, topic, level, learnedWord
 export async function generateSyllabus(llmConfig, topic, level, lessonCount = 6, langId = DEFAULT_LANG_ID, nativeLang = 'en', { learnerProfile, recentTopics } = {}) {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
-  const prompt = buildSyllabusPrompt(langConfig, topic, level, lessonCount, nativeLangName, { learnerProfile, recentTopics });
+  const useTargetLang = isAdvancedLevel(langId, level);
+  const prompt = buildSyllabusPrompt(langConfig, topic, level, lessonCount, nativeLangName, { learnerProfile, recentTopics, useTargetLang });
 
   const raw = await callLLM(llmConfig, '', prompt, 2048);
   const result = parseJSONWithFallback(raw, 'LLM returned an invalid syllabus format. Please try again.');
@@ -361,7 +363,8 @@ export async function generateSyllabus(llmConfig, topic, level, lessonCount = 6,
 export async function generateNarrativeSyllabus(llmConfig, sourceMaterial, narrativeType, level, lessonCount = 20, langId = DEFAULT_LANG_ID, nativeLang = 'en', { learnerProfile } = {}) {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
-  const prompt = buildNarrativeSyllabusPrompt(langConfig, sourceMaterial, narrativeType, level, lessonCount, nativeLangName, { learnerProfile });
+  const useTargetLang = isAdvancedLevel(langId, level);
+  const prompt = buildNarrativeSyllabusPrompt(langConfig, sourceMaterial, narrativeType, level, lessonCount, nativeLangName, { learnerProfile, useTargetLang });
 
   const raw = await callLLM(llmConfig, '', prompt, 8192);
   if (typeof raw === 'string' && raw.length > 0) {
@@ -387,7 +390,8 @@ export async function generateNarrativeSyllabus(llmConfig, sourceMaterial, narra
 export async function generateLearningPath(llmConfig, profile, langId = DEFAULT_LANG_ID, nativeLang = 'en') {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
-  const prompt = buildLearningPathPrompt(langConfig, profile, nativeLangName);
+  const useTargetLang = isAdvancedLevel(langId, profile.level);
+  const prompt = buildLearningPathPrompt(langConfig, profile, nativeLangName, { useTargetLang });
 
   const raw = await callLLM(llmConfig, '', prompt, 8192);
   const result = parseJSONWithFallback(raw, 'LLM returned an invalid learning path format. Please try again.');
@@ -413,7 +417,8 @@ export async function generateLearningPath(llmConfig, profile, langId = DEFAULT_
 export async function extendLearningPathAPI(llmConfig, path, additionalCount = 5, nativeLang = 'en') {
   const langConfig = getLang(path.langId);
   const nativeLangName = getNativeLang(nativeLang).name;
-  const prompt = buildExtendPathPrompt(langConfig, path, additionalCount, nativeLangName);
+  const useTargetLang = isAdvancedLevel(path.langId, path.level);
+  const prompt = buildExtendPathPrompt(langConfig, path, additionalCount, nativeLangName, { useTargetLang });
 
   const raw = await callLLM(llmConfig, '', prompt, 8192);
   const result = parseJSONWithFallback(raw, 'LLM returned an invalid extension format. Please try again.');
@@ -434,7 +439,8 @@ export async function extendLearningPathAPI(llmConfig, path, additionalCount = 5
 export async function generatePathUnitSyllabus(llmConfig, unit, pathContext, level, lessonCount = 8, langId = DEFAULT_LANG_ID, nativeLang = 'en', { learnerProfile } = {}) {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
-  const prompt = buildPathUnitSyllabusPrompt(langConfig, unit, pathContext, level, lessonCount, nativeLangName, { learnerProfile });
+  const useTargetLang = isAdvancedLevel(langId, level);
+  const prompt = buildPathUnitSyllabusPrompt(langConfig, unit, pathContext, level, lessonCount, nativeLangName, { learnerProfile, useTargetLang });
 
   const maxTokens = unit.style === 'narrative' ? 8192 : 2048;
   const raw = await callLLM(llmConfig, '', prompt, maxTokens);
@@ -660,11 +666,12 @@ export const READER_JSON_SCHEMA = {
 export async function generateReader(llmConfig, topic, level, learnedWords = {}, targetChars = 1200, maxTokens = 8192, previousStory = null, langId = DEFAULT_LANG_ID, { signal, structured = false, nativeLang = 'en', vocabFocus, syllabusContext, taughtGrammar, difficultyHint, learnerContext, recentTopics, narrativeContext, narrativeType } = {}) {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
+  const useTargetLang = isAdvancedLevel(langId, level);
   const rangePadding = targetChars <= 300 ? 50 : 100;
   const charRange = `${targetChars - rangePadding}-${targetChars + rangePadding}`;
   const system = narrativeType
-    ? buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, narrativeType })
-    : buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, recentTopics });
+    ? buildNarrativeReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, narrativeType, useTargetLang })
+    : buildReaderSystem(langConfig, level, topic, charRange, targetChars, nativeLangName, { difficultyHint, recentTopics, useTargetLang });
   const userMessage = buildReaderUserMessage(topic, learnedWords, previousStory, langId, { vocabFocus, syllabusContext, taughtGrammar, learnerContext, narrativeContext });
 
   return await callLLM(llmConfig, system, userMessage, maxTokens, { signal, structured });
@@ -675,7 +682,8 @@ export async function generateReader(llmConfig, topic, level, learnedWords = {},
 export async function extendSyllabus(llmConfig, topic, level, existingLessons, additionalCount = 3, langId = DEFAULT_LANG_ID, nativeLang = 'en') {
   const langConfig = getLang(langId);
   const nativeLangName = getNativeLang(nativeLang).name;
-  const prompt = buildExtendSyllabusPrompt(langConfig, topic, level, existingLessons, additionalCount, nativeLangName);
+  const useTargetLang = isAdvancedLevel(langId, level);
+  const prompt = buildExtendSyllabusPrompt(langConfig, topic, level, existingLessons, additionalCount, nativeLangName, { useTargetLang });
 
   const raw = await callLLM(llmConfig, '', prompt, 2048);
   const lessons = parseJSONWithFallback(raw, 'LLM returned an invalid lesson format. Please try again.');
@@ -687,7 +695,8 @@ export async function extendSyllabus(llmConfig, topic, level, existingLessons, a
 export async function extendNarrativeSyllabus(llmConfig, syllabus, additionalCount = 10, nativeLang = 'en') {
   const langConfig = getLang(syllabus.langId);
   const nativeLangName = getNativeLang(nativeLang).name;
-  const prompt = buildExtendNarrativeSyllabusPrompt(langConfig, syllabus, additionalCount, nativeLangName);
+  const useTargetLang = isAdvancedLevel(syllabus.langId, syllabus.level);
+  const prompt = buildExtendNarrativeSyllabusPrompt(langConfig, syllabus, additionalCount, nativeLangName, { useTargetLang });
 
   const raw = await callLLM(llmConfig, '', prompt, 4096);
   const lessons = parseJSONWithFallback(raw, 'LLM returned an invalid narrative lesson format. Please try again.');

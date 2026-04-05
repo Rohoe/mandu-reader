@@ -4,7 +4,7 @@ import { actions } from '../../context/actions';
 import { generateLearningPath } from '../../lib/api';
 import { buildLLMConfig, hasAnyUserKey } from '../../lib/llmConfig';
 import { createLearningPath } from '../../lib/learningPathSchema';
-import { getAllLanguages, DEFAULT_LANG_ID } from '../../lib/languages';
+import { getAllLanguages, DEFAULT_LANG_ID, isAdvancedLevel } from '../../lib/languages';
 import { useT } from '../../i18n';
 import StepInterests from './StepInterests';
 import StepBlueprint from './StepBlueprint';
@@ -114,6 +114,7 @@ export default function PathWizard({ onCreated, onCancel, onOpenSettings, onShow
       profile,
       units: blueprint.units,
       continuationContext: blueprint.continuationContext,
+      generatedInTargetLang: isAdvancedLevel(profile.langId, profile.level),
     });
     act.addLearningPath(path);
     act.notify('success', `Learning path "${path.title}" created with ${path.units.length} units`);

@@ -9,7 +9,7 @@
 import { buildSyllabusPrompt } from './syllabusPrompt';
 import { buildNarrativeSyllabusPrompt } from './narrativeSyllabusPrompt';
 
-export function buildPathUnitSyllabusPrompt(langConfig, unit, pathContext, level, lessonCount, nativeLangName = 'English', { learnerProfile } = {}) {
+export function buildPathUnitSyllabusPrompt(langConfig, unit, pathContext, level, lessonCount, nativeLangName = 'English', { learnerProfile, useTargetLang } = {}) {
   const overlapSection = buildOverlapSection(pathContext);
 
   if (unit.style === 'narrative' && unit.sourceMaterial) {
@@ -21,7 +21,7 @@ export function buildPathUnitSyllabusPrompt(langConfig, unit, pathContext, level
       level,
       lessonCount,
       nativeLangName,
-      { learnerProfile }
+      { learnerProfile, useTargetLang }
     );
     return injectOverlapContext(basePrompt, overlapSection);
   }
@@ -33,7 +33,7 @@ export function buildPathUnitSyllabusPrompt(langConfig, unit, pathContext, level
     level,
     lessonCount,
     nativeLangName,
-    { learnerProfile, recentTopics: [] }
+    { learnerProfile, recentTopics: [], useTargetLang }
   );
 
   const unitContext = `\n## Unit Context (from Learning Path: "${pathContext.pathTitle}")

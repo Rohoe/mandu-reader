@@ -1,4 +1,4 @@
-export function buildReaderSystem(langConfig, level, topic, charRange, targetChars = 1200, nativeLangName = 'English', { difficultyHint, recentTopics } = {}) {
+export function buildReaderSystem(langConfig, level, topic, charRange, targetChars = 1200, nativeLangName = 'English', { difficultyHint, recentTopics, useTargetLang } = {}) {
   const p = langConfig.prompts;
   const profName = langConfig.proficiency.name;
 
@@ -94,5 +94,5 @@ Identify ${grammarRange} key ${p.grammarContext} used in the story. For each pat
 - Example sentence taken directly from the story
 
 ### 6. Suggested Topics
-2-3 follow-up topic ideas (in ${nativeLangName}), one per line. Suggest topics that complement this story.${recentTopics?.length > 0 ? `\n(The learner has recently studied: ${recentTopics.join(', ')} — suggest different ones.)` : ''}`;
+2-3 follow-up topic ideas (in ${useTargetLang ? p.targetLanguage : nativeLangName}), one per line. Suggest topics that complement this story.${recentTopics?.length > 0 ? `\n(The learner has recently studied: ${recentTopics.join(', ')} — suggest different ones.)` : ''}`;
 }

@@ -9,7 +9,7 @@ import { getProvider } from '../lib/providers';
 import { parseReaderResponse } from '../lib/parser';
 import { mapReaderVocabulary } from '../lib/vocabMapper';
 import { mapReaderGrammar } from '../lib/grammarMapper';
-import { getLang, getAllLanguages, DEFAULT_LANG_ID } from '../lib/languages';
+import { getLang, getAllLanguages, DEFAULT_LANG_ID, isAdvancedLevel } from '../lib/languages';
 import { useT } from '../i18n';
 import PathWizard from './PathWizard';
 import GenerationProgress from './GenerationProgress';
@@ -108,6 +108,7 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
           lessons,
           suggestedTopics,
           createdAt: Date.now(),
+          ...(isAdvancedLevel(langId, level) && { generatedInTargetLang: true }),
         };
         setSuggestions(suggestedTopics || []);
         act.addSyllabus(newSyllabus);
@@ -126,6 +127,7 @@ export default function TopicForm({ onNewSyllabus, onStandaloneGenerated, onStan
         lessons,
         suggestedTopics,
         createdAt: Date.now(),
+        ...(isAdvancedLevel(langId, level) && { generatedInTargetLang: true }),
       };
       setSuggestions(suggestedTopics || []);
       act.addSyllabus(newSyllabus);

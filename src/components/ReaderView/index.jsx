@@ -316,6 +316,8 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
         isPending={isPending}
         llmConfig={llmConfig}
         activeProvider={activeProvider}
+        nativeLang={nativeLang}
+        generatedInTargetLang={syllabus?.generatedInTargetLang}
       />
     );
   }
@@ -377,6 +379,8 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
         speakText={speakText}
         stopSpeaking={stopSpeaking}
         onOpenChat={onOpenChat}
+        renderChars={renderChars}
+        onWordClick={handleWordClick}
       />
 
       <hr className="divider" />

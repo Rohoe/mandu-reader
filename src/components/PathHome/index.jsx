@@ -7,6 +7,7 @@ import { buildLearnerProfile } from '../../lib/stats';
 import { getLang } from '../../lib/languages';
 import { useT } from '../../i18n';
 import UnitCard from './UnitCard';
+import TranslatableText from '../TranslatableText';
 import './PathHome.css';
 
 
@@ -149,7 +150,13 @@ export default function PathHome({ pathId, onSelectUnit, onOpenSettings, onShowI
       {/* Header */}
       <div className="path-home__header">
         <h2 className="path-home__title font-display">{path.title}</h2>
-        <p className="path-home__description">{path.description}</p>
+        <TranslatableText
+          text={path.description}
+          langId={path.langId}
+          nativeLang={nativeLang}
+          enabled={!!path.generatedInTargetLang}
+          className="path-home__description"
+        />
         <div className="path-home__stats">
           <span>{t('pathHome.units', { count: path.units.length })}</span>
           <span>{t('pathHome.completed', { count: completedUnits })}</span>
@@ -191,6 +198,9 @@ export default function PathHome({ pathId, onSelectUnit, onOpenSettings, onShowI
             onEdit={() => setEditingUnit(i)}
             onSaveEdit={(updates) => handleEditUnit(i, updates)}
             onCancelEdit={() => setEditingUnit(null)}
+            langId={path.langId}
+            nativeLang={nativeLang}
+            generatedInTargetLang={path.generatedInTargetLang}
           />
         ))}
       </div>

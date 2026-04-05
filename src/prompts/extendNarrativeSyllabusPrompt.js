@@ -1,6 +1,7 @@
-export function buildExtendNarrativeSyllabusPrompt(langConfig, syllabus, additionalCount, nativeLangName = 'English') {
+export function buildExtendNarrativeSyllabusPrompt(langConfig, syllabus, additionalCount, nativeLangName = 'English', { useTargetLang } = {}) {
   const p = langConfig.prompts;
   const profName = langConfig.proficiency.name;
+  const descLang = useTargetLang ? p.targetLanguage : nativeLangName;
   const { narrativeArc, futureArc, lessons, topic, narrativeType } = syllabus;
 
   const lastLesson = lessons[lessons.length - 1];
@@ -49,10 +50,10 @@ Return ONLY a JSON array of new lesson objects (no wrapper object, no explanatio
     "lesson_number": ${startNumber},
     "${p.titleFieldKey}": "${p.titleInstruction}",
     "title_en": "${nativeLangName} lesson title",
-    "description": "one ${nativeLangName} sentence",
+    "description": "one ${descLang} sentence",
     "vocabulary_focus": ["3-5 keywords drawn from this specific lesson's content"],
     "difficulty_hint": "review|core|stretch",
-    "chapter_summary": "2-3 sentences describing the dramatic action of this chapter (in ${nativeLangName})",
+    "chapter_summary": "2-3 sentences describing the dramatic action of this chapter (in ${descLang})",
     "characters": ["character names featured"],
     "setting": "where/when",
     "narrative_position": "setup|rising|climax|falling|resolution — based on dramatic tension, not chronological position",
