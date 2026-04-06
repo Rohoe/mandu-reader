@@ -428,6 +428,7 @@ export default {
   'comprehension.matchesResult': '{count}/{total} 正确',
   'comprehension.translatingAll': '翻译中…',
   'grammar.title': '语法笔记',
+  'grammar.exampleLabel': '例句',
 
   // ── Accuracy notes ───────────────────────────────────────────
   'accuracyNotes.title': '准确性注释',

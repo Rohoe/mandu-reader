@@ -487,6 +487,7 @@ export default {
 
   // ── Grammar notes ─────────────────────────────────────────────
   'grammar.title': 'Grammar Notes',
+  'grammar.exampleLabel': 'Example',
 
   // ── Accuracy notes ───────────────────────────────────────────
   'accuracyNotes.title': 'Accuracy Notes',

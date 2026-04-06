@@ -431,6 +431,7 @@ export default {
   'comprehension.matchesResult': '{count}/{total} correctes',
   'comprehension.translatingAll': 'Traduction en cours\u2026',
   'grammar.title': 'Notes de grammaire',
+  'grammar.exampleLabel': 'Exemple',
 
   // ── Accuracy notes ───────────────────────────────────────────
   'accuracyNotes.title': 'Notes de précision',

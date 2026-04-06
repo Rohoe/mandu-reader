@@ -428,6 +428,7 @@ export default {
   'comprehension.matchesResult': '{count}/{total} 정답',
   'comprehension.translatingAll': '번역 중…',
   'grammar.title': '문법 노트',
+  'grammar.exampleLabel': '예문',
 
   // ── Accuracy notes ───────────────────────────────────────────
   'accuracyNotes.title': '정확성 노트',

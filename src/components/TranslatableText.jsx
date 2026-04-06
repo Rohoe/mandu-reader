@@ -15,7 +15,7 @@ import { useT } from '../i18n';
  * - tag: wrapper element (default 'p')
  * - className: class for the wrapper
  */
-export default function TranslatableText({ text, langId, nativeLang, enabled, tag: Tag = 'p', className }) {
+export default function TranslatableText({ text, langId, nativeLang, enabled, tag: Tag = 'p', className, children }) {
   const t = useT();
   const [translation, setTranslation] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,12 +41,12 @@ export default function TranslatableText({ text, langId, nativeLang, enabled, ta
   }, [text, langId, nativeLang, translation, t]);
 
   if (!enabled) {
-    return <Tag className={className}>{text}</Tag>;
+    return <Tag className={className}>{children || text}</Tag>;
   }
 
   return (
     <div className="translatable-text">
-      <Tag className={className}>{text}</Tag>
+      <Tag className={className}>{children || text}</Tag>
       <button
         className={`translatable-text__btn${show ? ' translatable-text__btn--active' : ''}${loading ? ' translatable-text__btn--loading' : ''}`}
         onClick={handleToggle}

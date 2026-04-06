@@ -90,9 +90,19 @@ For vocabulary matching questions (use 3-5 vocabulary words from the story), use
 3. word3 = definition3
 
 ### 5. Grammar Notes
-Identify ${grammarRange} key ${p.grammarContext} used in the story. For each pattern:
-- **Pattern** (${descLang} name) — one-sentence ${descLang} explanation of the structure and when to use it
-- Example sentence taken directly from the story
+Return a JSON block tagged \`\`\`grammar-json containing an array of ${grammarRange} grammar pattern objects.
+Focus on sentence-level structures and constructions — not individual vocabulary words or adverbs.
+If a word is already in the vocabulary list, do not repeat it as a grammar note.
+\`\`\`grammar-json
+[
+  { "pattern": "看似…实则…", "label": "对比句式", "explanation": "表达表面与实际的对比", "example": "..." },
+  { "pattern": "由…V着", "label": "表示执行者", "explanation": "说明动作由谁完成", "example": "..." }
+]
+\`\`\`
+- "pattern": the bare grammatical structure only (e.g. "看似…实则…", "一…就…", "把…V成…"). Never include descriptions in this field.
+- "label": short ${descLang} name for what the pattern does
+- "explanation": one-sentence ${descLang} explanation of when/how to use it
+- "example": example sentence taken directly from the story
 
 ### 6. Suggested Topics
 2-3 follow-up topic ideas (in ${useTargetLang ? p.targetLanguage : nativeLangName}), one per line. Suggest topics that complement this story.${recentTopics?.length > 0 ? `\n(The learner has recently studied: ${recentTopics.join(', ')} — suggest different ones.)` : ''}`;

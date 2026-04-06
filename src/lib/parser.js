@@ -202,7 +202,31 @@ function extractAnkiJson(rawText) {
   return [];
 }
 
+function extractGrammarJson(rawText) {
+  const match = rawText.match(/```grammar-json\s*\n([\s\S]*?)\n```/);
+  if (match) {
+    try {
+      const arr = JSON.parse(match[1]);
+      if (Array.isArray(arr)) {
+        return arr.map(n => ({
+          pattern:     n.pattern || '',
+          label:       n.label || '',
+          explanation: n.explanation || '',
+          example:     n.example || '',
+        }));
+      }
+    } catch (e) {
+      console.warn('[parser] Failed to parse grammar-json block:', e);
+    }
+  }
+  return [];
+}
+
 function extractGrammarNotes(rawText) {
+  // Try structured JSON first, fall back to markdown parsing
+  const jsonNotes = extractGrammarJson(rawText);
+  if (jsonNotes.length > 0) return jsonNotes;
+
   const grammarSectionMatch = rawText.match(
     /#{2,4}\s*(?:\d\.\s*)?(?:Grammar|语法|문법)[^\n]*\s*\n+([\s\S]*?)(?=#{2,4}\s*(?:\d\.\s*)?Suggested|$)/i
   );

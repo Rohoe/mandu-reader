@@ -649,10 +649,10 @@ export const READER_JSON_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          pattern:     { type: 'string', description: 'Grammar pattern in target language' },
-          label:       { type: 'string', description: 'English name of the pattern' },
-          explanation: { type: 'string', description: 'One-sentence explanation' },
-          example:     { type: 'string', description: 'Example from the story' },
+          pattern:     { type: 'string', description: 'The bare grammatical structure or word only (e.g. "看似…实则…", "便", "由…V着"). Do NOT include descriptions.' },
+          label:       { type: 'string', description: 'Short descriptive name of what the pattern does (e.g. "对比句式", "表示时间紧接")' },
+          explanation: { type: 'string', description: 'One-sentence explanation of when/how to use this pattern' },
+          example:     { type: 'string', description: 'Example sentence from the story demonstrating this pattern' },
         },
         required: ['pattern', 'label', 'explanation', 'example'],
       },
