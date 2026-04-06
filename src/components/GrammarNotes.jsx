@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useT } from '../i18n';
 import TranslatableText from './TranslatableText';
+import { InteractiveText } from './WordSegments';
 import './GrammarNotes.css';
 
-export default function GrammarNotes({ grammarNotes, renderChars, langId, nativeLang, generatedInTargetLang }) {
+export default function GrammarNotes({ grammarNotes, renderChars, langId, nativeLang, generatedInTargetLang, onWordClick }) {
   const [collapsed, setCollapsed] = useState(false);
   const t = useT();
   if (!grammarNotes?.length) return null;
@@ -22,7 +23,7 @@ export default function GrammarNotes({ grammarNotes, renderChars, langId, native
       {!collapsed && (
         <div id="grammar-notes-content" className="grammar-notes__cards fade-in">
           {grammarNotes.map((note, i) => (
-            <GrammarCard key={note.pattern || i} note={note} index={i} renderChars={renderChars} langId={langId} nativeLang={nativeLang} generatedInTargetLang={generatedInTargetLang} />
+            <GrammarCard key={note.pattern || i} note={note} index={i} renderChars={renderChars} langId={langId} nativeLang={nativeLang} generatedInTargetLang={generatedInTargetLang} onWordClick={onWordClick} />
           ))}
         </div>
       )}
@@ -30,13 +31,15 @@ export default function GrammarNotes({ grammarNotes, renderChars, langId, native
   );
 }
 
-function GrammarCard({ note, index, renderChars, langId, nativeLang, generatedInTargetLang }) {
+function GrammarCard({ note, index, renderChars, langId, nativeLang, generatedInTargetLang, onWordClick }) {
   return (
     <div className="grammar-card">
       <div className="grammar-card__header">
         <span className="grammar-card__num">{index + 1}</span>
         <span className="grammar-card__pattern text-chinese">
-          {renderChars ? renderChars(note.pattern, `gp-${index}`) : note.pattern}
+          {onWordClick
+            ? <InteractiveText text={note.pattern} langId={langId} renderChars={renderChars || ((t) => t)} keyPrefix={`gp-${index}`} onWordClick={onWordClick} />
+            : (renderChars ? renderChars(note.pattern, `gp-${index}`) : note.pattern)}
         </span>
         <TranslatableText
           text={note.label}
@@ -60,6 +63,7 @@ function GrammarCard({ note, index, renderChars, langId, nativeLang, generatedIn
           <p className="grammar-card__example text-chinese">
             {(() => {
               const cleaned = note.example.replace(/^[-•]\s*/, '');
+              if (onWordClick) return <InteractiveText text={cleaned} langId={langId} renderChars={renderChars || ((t) => t)} keyPrefix={`ge-${index}`} onWordClick={onWordClick} />;
               return renderChars ? renderChars(cleaned, `ge-${index}`) : cleaned;
             })()}
           </p>

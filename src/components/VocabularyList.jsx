@@ -2,12 +2,19 @@ import { useState } from 'react';
 import { renderInline, stripMarkdown } from '../lib/renderInline';
 import { useT } from '../i18n';
 import TranslatableText from './TranslatableText';
+import { InteractiveText } from './WordSegments';
 import { Volume2, Square } from 'lucide-react';
 import './VocabularyList.css';
 
-function VocabCard({ word, index, renderChars, speakText, speakingKey, ttsSupported, showParagraphTools, onTranslateExample, translatingKey, vocabTranslations, visibleTranslations, toggleTranslation, langId, nativeLang, generatedInTargetLang }) {
+function VocabCard({ word, index, renderChars, speakText, speakingKey, ttsSupported, showParagraphTools, onTranslateExample, translatingKey, vocabTranslations, visibleTranslations, toggleTranslation, langId, nativeLang, generatedInTargetLang, onWordClick, romanizer }) {
   const [open, setOpen] = useState(false);
   const t = useT();
+
+  const spacedRomanization = (() => {
+    if (!romanizer) return word.romanization || word.pinyin;
+    try { return romanizer.romanize(word.target || word.chinese).join(' ').replace(/ +/g, ' ').trim(); }
+    catch { return word.romanization || word.pinyin; }
+  })();
 
   function handleTts(e, text, key) {
     e.stopPropagation();
@@ -37,7 +44,7 @@ function VocabCard({ word, index, renderChars, speakText, speakingKey, ttsSuppor
         <span className="vocab-card__chinese text-chinese">
           {renderChars ? renderChars(word.target || word.chinese, `vc-${index}`) : (word.target || word.chinese)}
         </span>
-        <span className="vocab-card__pinyin text-muted">{word.romanization || word.pinyin}</span>
+        <span className="vocab-card__pinyin text-muted">{spacedRomanization}</span>
         <span className="vocab-card__english">{word.translation || word.english}</span>
         <span className="vocab-card__chevron">{open ? '▲' : '▼'}</span>
       </button>
@@ -48,7 +55,9 @@ function VocabCard({ word, index, renderChars, speakText, speakingKey, ttsSuppor
             <div className="vocab-card__example">
               <span className="vocab-card__example-label text-subtle">{t('vocab.fromStory')}</span>
               <p className="vocab-card__example-text text-chinese">
-                {renderChars?.(word.exampleStory, `ves-${index}`) || renderInline(word.exampleStory)}
+                {onWordClick
+                  ? <InteractiveText text={word.exampleStory} langId={langId} renderChars={renderChars || ((t) => t)} keyPrefix={`ves-${index}`} onWordClick={onWordClick} />
+                  : (renderChars?.(word.exampleStory, `ves-${index}`) || renderInline(word.exampleStory))}
                 {showParagraphTools && (
                   <>
                     {ttsSupported && (
@@ -87,7 +96,9 @@ function VocabCard({ word, index, renderChars, speakText, speakingKey, ttsSuppor
             <div className="vocab-card__example">
               <span className="vocab-card__example-label text-subtle">{t('vocab.additionalExample')}</span>
               <p className="vocab-card__example-text text-chinese">
-                {renderChars?.(word.exampleExtra, `vee-${index}`) || renderInline(word.exampleExtra)}
+                {onWordClick
+                  ? <InteractiveText text={word.exampleExtra} langId={langId} renderChars={renderChars || ((t) => t)} keyPrefix={`vee-${index}`} onWordClick={onWordClick} />
+                  : (renderChars?.(word.exampleExtra, `vee-${index}`) || renderInline(word.exampleExtra))}
                 {showParagraphTools && (
                   <>
                     {ttsSupported && (
@@ -128,7 +139,7 @@ function VocabCard({ word, index, renderChars, speakText, speakingKey, ttsSuppor
   );
 }
 
-export default function VocabularyList({ vocabulary, renderChars, speakText, speakingKey, ttsSupported, showParagraphTools, onTranslateExample, translatingKey, vocabTranslations, langId, nativeLang, generatedInTargetLang }) {
+export default function VocabularyList({ vocabulary, renderChars, speakText, speakingKey, ttsSupported, showParagraphTools, onTranslateExample, translatingKey, vocabTranslations, langId, nativeLang, generatedInTargetLang, onWordClick, romanizer }) {
   const [collapsed, setCollapsed] = useState(false);
   const [visibleTranslations, setVisibleTranslations] = useState(new Set());
   const t = useT();
@@ -178,6 +189,8 @@ export default function VocabularyList({ vocabulary, renderChars, speakText, spe
               langId={langId}
               nativeLang={nativeLang}
               generatedInTargetLang={generatedInTargetLang}
+              onWordClick={onWordClick}
+              romanizer={romanizer}
             />
           ))}
         </div>

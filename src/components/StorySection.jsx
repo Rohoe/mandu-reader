@@ -9,47 +9,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useT } from '../i18n';
 import { Square } from 'lucide-react';
 
-const LANG_LOCALE = { zh: 'zh', yue: 'zh', ko: 'ko', fr: 'fr', es: 'es', en: 'en' };
-
-/**
- * Splits a text segment into individual word spans with hover/click behavior.
- * Falls back to a plain span if Intl.Segmenter is unavailable.
- */
-function WordSegments({ text, langId, sentence, renderChars, keyPrefix, onWordClick, tag: Tag }) {
-  const segments = useMemo(() => segmentWordsInline(text, langId), [text, langId]);
-
-  if (!segments) {
-    const inner = <span>{renderChars(text, keyPrefix)}</span>;
-    return Tag ? <Tag>{inner}</Tag> : inner;
-  }
-
-  const nodes = segments.map((seg, i) => {
-    if (!seg.isWordLike) {
-      return <span key={`p${i}`}>{renderChars(seg.segment, `${keyPrefix}-p${i}`)}</span>;
-    }
-    return (
-      <span
-        key={i}
-        className="reader-view__word"
-        onClick={(e) => { e.stopPropagation(); onWordClick && onWordClick(e, seg.segment, sentence); }}
-      >
-        {renderChars(seg.segment, `${keyPrefix}-w${i}`)}
-      </span>
-    );
-  });
-
-  return Tag ? <Tag>{nodes}</Tag> : <>{nodes}</>;
-}
-
-function segmentWordsInline(text, langId) {
-  if (typeof Intl.Segmenter !== 'function') return null;
-  const locale = LANG_LOCALE[langId];
-  if (!locale) return null;
-  try {
-    const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
-    return [...segmenter.segment(text)];
-  } catch { return null; }
-}
+import WordSegments, { segmentWordsInline } from './WordSegments';
 
 /**
  * Unified popover content with clickable word drill-down.

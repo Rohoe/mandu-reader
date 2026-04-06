@@ -10,6 +10,7 @@ import { getLang } from '../lib/languages';
 import { renderInline, stripMarkdown } from '../lib/renderInline';
 import { useT } from '../i18n';
 import { useQuestionTranslation } from '../hooks/useQuestionTranslation';
+import { InteractiveText } from './WordSegments';
 import { Volume2, Square } from 'lucide-react';
 import './ComprehensionQuestions.css';
 
@@ -29,7 +30,7 @@ function scoreIndicator(scoreStr) {
 
 const AUTO_SAVE_DELAY = 1500;
 
-export default function ComprehensionQuestions({ questions, lessonKey, reader, story, level, langId, renderChars, showParagraphTools, speakText, speakingKey, ttsSupported, onOpenSettings, questionTranslations, onCacheQuestionTranslations }) {
+export default function ComprehensionQuestions({ questions, lessonKey, reader, story, level, langId, renderChars, showParagraphTools, speakText, speakingKey, ttsSupported, onOpenSettings, questionTranslations, onCacheQuestionTranslations, onWordClick }) {
   const t = useT();
   const langCfg = getLang(langId);
   const tfTrue = langCfg.tfLabels?.true || t('comprehension.true');
@@ -276,7 +277,9 @@ export default function ComprehensionQuestions({ questions, lessonKey, reader, s
                 <span className="comprehension__num">{i + 1}.</span>
                 <div className="comprehension__item-body">
                   <span className="comprehension__text text-chinese">
-                  {renderChars ? renderChars(qText, `q${i}`) : renderInline(qText)}
+                  {onWordClick
+                    ? <InteractiveText text={qText} langId={langId} renderChars={renderChars || ((t) => t)} keyPrefix={`q${i}`} onWordClick={onWordClick} />
+                    : (renderChars ? renderChars(qText, `q${i}`) : renderInline(qText))}
                   {showParagraphTools && (
                     <>
                       {ttsSupported && (

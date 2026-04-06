@@ -419,6 +419,7 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
         onOpenSettings={onOpenSettings}
         questionTranslations={reader?.questionTranslations || {}}
         onCacheQuestionTranslations={handleCacheQuestionTranslations}
+        onWordClick={handleWordClick}
       />
 
       {/* Vocabulary */}
@@ -435,10 +436,12 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
         langId={langId}
         nativeLang={nativeLang}
         generatedInTargetLang={!!reader?.generatedInTargetLang}
+        onWordClick={handleWordClick}
+        romanizer={romanizer}
       />
 
       {/* Grammar notes */}
-      <GrammarNotes grammarNotes={reader.grammarNotes} renderChars={renderChars} langId={langId} nativeLang={nativeLang} generatedInTargetLang={!!reader?.generatedInTargetLang} />
+      <GrammarNotes grammarNotes={reader.grammarNotes} renderChars={renderChars} langId={langId} nativeLang={nativeLang} generatedInTargetLang={!!reader?.generatedInTargetLang} onWordClick={handleWordClick} />
 
       {/* Accuracy notes */}
       <AccuracyNotes notes={reader.accuracyNotes} langId={langId} nativeLang={nativeLang} generatedInTargetLang={!!reader?.generatedInTargetLang} />
