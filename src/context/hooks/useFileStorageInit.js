@@ -56,13 +56,17 @@ export function useFileStorageInit(dispatch) {
 
     initFileStorage();
 
-    // Auth listener for cloud sync
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      dispatch({ type: SET_CLOUD_USER, payload: session?.user ?? null });
-    });
+    // Auth listener for cloud sync (catch for offline / missing config)
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        dispatch({ type: SET_CLOUD_USER, payload: session?.user ?? null });
+      })
+      .catch(() => {
+        dispatch({ type: SET_CLOUD_USER, payload: null });
+      });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       dispatch({ type: SET_CLOUD_USER, payload: session?.user ?? null });
     });
     return () => subscription.unsubscribe();
-  }, [dispatch]);  // eslint-disable-line react-hooks/exhaustive-deps — mount-only init; dispatch is stable from useReducer
+  }, [dispatch]);  // eslint-disable-line react-hooks/exhaustive-deps -- mount-only init; dispatch is stable from useReducer
 }

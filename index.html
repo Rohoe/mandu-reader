@@ -12,7 +12,32 @@
     <title>Mandu — Graded Reader</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Inline fallback shown until React mounts (critical for offline PWA) -->
+      <div id="offline-fallback" style="
+        min-height:100vh;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;background:#FAF8F5;font-family:system-ui,sans-serif;
+        color:#1A1814;gap:16px;padding:24px;text-align:center;
+      ">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="animation:pulse 2s ease-in-out infinite">
+          <circle cx="24" cy="24" r="20" stroke="#4A7C7E" stroke-width="3" fill="none" stroke-dasharray="80 40" />
+        </svg>
+        <div style="font-size:18px;font-weight:600;color:#4A7C7E">Mandu</div>
+        <div id="offline-msg" style="font-size:14px;color:#635E58;display:none">
+          You're offline. Some features may be limited.
+        </div>
+      </div>
+      <style>
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        @media(prefers-color-scheme:dark){
+          #offline-fallback{background:#1C1A17!important;color:#E8E3DC!important}
+          #offline-msg{color:#7A756F!important}
+        }
+      </style>
+      <script>
+        if(!navigator.onLine)document.getElementById('offline-msg').style.display='block';
+      </script>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
