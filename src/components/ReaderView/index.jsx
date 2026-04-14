@@ -3,9 +3,8 @@ import { useAppSelector, useAppDispatch } from '../../context/useAppSelector';
 import { AppContext } from '../../context/AppContext';
 import { actions } from '../../context/actions';
 import { LOAD_CACHED_READER, SET_QUOTA_WARNING } from '../../context/actionTypes';
-import { getLang, getLessonTitle, DEFAULT_LANG_ID } from '../../lib/languages';
+import { getLang, DEFAULT_LANG_ID } from '../../lib/languages';
 import { buildLLMConfig } from '../../lib/llmConfig';
-import { getProvider } from '../../lib/providers';
 import { translateText } from '../../lib/translate';
 import { getNextActions } from '../../lib/nextActions';
 import { useT } from '../../i18n';
@@ -210,7 +209,7 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
       loadedKeysRef.current.add(lessonKey);
       dispatch({ type: LOAD_CACHED_READER, payload: { lessonKey } });
     }
-  }, [lessonKey, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps — generatedReaders excluded (ref-guard pattern)
+  }, [lessonKey, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps -- generatedReaders excluded (ref-guard pattern)
 
   // Scroll to top when lesson changes
   useEffect(() => {
@@ -282,6 +281,13 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
   // Proficiency badge text
   const profBadge = `${langConfig.proficiency.name} ${reader?.level ?? lessonMeta?.level ?? ''}`;
 
+  const readerCtx = useMemo(() => reader ? ({
+    reader, lessonKey, langId, nativeLang,
+    renderChars, showParagraphTools: translateButtons,
+    ttsSupported, speakingKey, speakText, stopSpeaking,
+    onWordClick: handleWordClick,
+  }) : null, [reader, lessonKey, langId, nativeLang, renderChars, translateButtons, ttsSupported, speakingKey, speakText, stopSpeaking, handleWordClick]);
+
   // ── Empty state ─────────────────────────────────────────────
   if (!lessonKey) {
     return <ReaderEmptyState decorativeChars={decorativeChars} charIndex={charIndex} onOpenSidebar={onOpenSidebar} />;
@@ -342,13 +348,6 @@ export default function ReaderView({ lessonKey, lessonMeta, syllabus, onMarkComp
   // ── Main reading view ───────────────────────────────────────
   const storyParagraphs = (reader.story || '').split(/\n\n+/).map(p => p.trim()).filter(Boolean);
   const storyText = storyParagraphs.join('\n\n');
-
-  const readerCtx = useMemo(() => ({
-    reader, lessonKey, langId, nativeLang,
-    renderChars, showParagraphTools: translateButtons,
-    ttsSupported, speakingKey, speakText, stopSpeaking,
-    onWordClick: handleWordClick,
-  }), [reader, lessonKey, langId, nativeLang, renderChars, translateButtons, ttsSupported, speakingKey, speakText, stopSpeaking, handleWordClick]);
 
   return (
     <ReaderProvider value={readerCtx}>
